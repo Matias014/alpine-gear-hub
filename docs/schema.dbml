@@ -1,0 +1,135 @@
+// AlpineGearHub — database schema
+// Rendered at https://dbdiagram.io
+
+Enum user_role {
+  Member
+  Moderator
+  Admin
+}
+
+Enum listing_status {
+  Draft
+  Active
+  Reserved
+  Sold
+  Expired
+  Removed
+}
+
+Enum gear_condition {
+  New
+  LikeNew
+  Good
+  Fair
+  Poor
+}
+
+Enum report_reason {
+  Counterfeit
+  Prohibited
+  Scam
+  SafetyConcern
+  Other
+}
+
+Enum report_status {
+  Pending
+  Reviewed
+  Dismissed
+}
+
+Enum promotion_tier {
+  Standard
+  Featured
+}
+
+Enum payment_status {
+  Pending
+  Completed
+  Failed
+  Refunded
+}
+
+Table users {
+  id uuid [pk]
+  email varchar [unique]
+  password_hash varchar
+  full_name varchar
+  role user_role
+  created_at timestamp
+}
+
+Table categories {
+  id uuid [pk]
+  name varchar
+  slug varchar [unique]
+}
+
+Table listings {
+  id uuid [pk]
+  title varchar
+  description text
+  category_id uuid [ref: > categories.id]
+  seller_id uuid [ref: > users.id]
+  price_amount numeric
+  price_currency varchar
+  condition gear_condition
+  status listing_status
+  manufacture_date date
+  safety_certification varchar
+  location varchar
+  views_count int
+  is_promoted boolean
+  created_at timestamp
+  updated_at timestamp
+  expires_at timestamp
+}
+
+Table listing_images {
+  id uuid [pk]
+  listing_id uuid [ref: > listings.id]
+  storage_key varchar
+  sort_order int
+  is_primary boolean
+}
+
+Table conversations {
+  id uuid [pk]
+  listing_id uuid [ref: > listings.id]
+  buyer_id uuid [ref: > users.id]
+  seller_id uuid [ref: > users.id]
+  created_at timestamp
+  last_message_at timestamp
+}
+
+Table messages {
+  id uuid [pk]
+  conversation_id uuid [ref: > conversations.id]
+  sender_id uuid [ref: > users.id]
+  body text
+  sent_at timestamp
+  read_at timestamp
+}
+
+Table reports {
+  id uuid [pk]
+  listing_id uuid [ref: > listings.id]
+  reported_by_user_id uuid [ref: > users.id]
+  reason report_reason
+  description text
+  status report_status
+  reviewed_by_user_id uuid [ref: > users.id]
+  reviewed_at timestamp
+}
+
+Table promotions {
+  id uuid [pk]
+  listing_id uuid [ref: > listings.id]
+  tier promotion_tier
+  start_at timestamp
+  end_at timestamp
+  price_amount int
+  price_currency varchar
+  payment_status payment_status
+  stripe_payment_intent_id varchar
+}
