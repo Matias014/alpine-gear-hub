@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Identity\AlpineGearHub.Identity.Infrastructure\AlpineGearHub.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Listings\AlpineGearHub.Listings.Infrastructure\AlpineGearHub.Listings.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Chat\AlpineGearHub.Chat.Infrastructure\AlpineGearHub.Chat.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Moderation\AlpineGearHub.Moderation.Infrastructure\AlpineGearHub.Moderation.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Promotions\AlpineGearHub.Promotions.Infrastructure\AlpineGearHub.Promotions.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.0" />
+  </ItemGroup>
+
+</Project>

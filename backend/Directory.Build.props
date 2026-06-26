@@ -1,0 +1,7 @@
+<Project>
+  <!-- Needed on Arch/CachyOS where the .NET SDK is installed via pacman
+       and ASP.NET Core workload prune manifests are not present. -->
+  <PropertyGroup>
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+  </PropertyGroup>
+</Project>

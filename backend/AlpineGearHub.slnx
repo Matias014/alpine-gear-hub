@@ -1,0 +1,38 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/AlpineGearHub.Api/AlpineGearHub.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Chat/">
+    <Project Path="src/Modules/Chat/AlpineGearHub.Chat.Application/AlpineGearHub.Chat.Application.csproj" />
+    <Project Path="src/Modules/Chat/AlpineGearHub.Chat.Domain/AlpineGearHub.Chat.Domain.csproj" />
+    <Project Path="src/Modules/Chat/AlpineGearHub.Chat.Infrastructure/AlpineGearHub.Chat.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/AlpineGearHub.Identity.Application/AlpineGearHub.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/AlpineGearHub.Identity.Domain/AlpineGearHub.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/AlpineGearHub.Identity.Infrastructure/AlpineGearHub.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Listings/">
+    <Project Path="src/Modules/Listings/AlpineGearHub.Listings.Application/AlpineGearHub.Listings.Application.csproj" />
+    <Project Path="src/Modules/Listings/AlpineGearHub.Listings.Domain/AlpineGearHub.Listings.Domain.csproj" />
+    <Project Path="src/Modules/Listings/AlpineGearHub.Listings.Infrastructure/AlpineGearHub.Listings.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Moderation/">
+    <Project Path="src/Modules/Moderation/AlpineGearHub.Moderation.Application/AlpineGearHub.Moderation.Application.csproj" />
+    <Project Path="src/Modules/Moderation/AlpineGearHub.Moderation.Domain/AlpineGearHub.Moderation.Domain.csproj" />
+    <Project Path="src/Modules/Moderation/AlpineGearHub.Moderation.Infrastructure/AlpineGearHub.Moderation.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Promotions/">
+    <Project Path="src/Modules/Promotions/AlpineGearHub.Promotions.Application/AlpineGearHub.Promotions.Application.csproj" />
+    <Project Path="src/Modules/Promotions/AlpineGearHub.Promotions.Domain/AlpineGearHub.Promotions.Domain.csproj" />
+    <Project Path="src/Modules/Promotions/AlpineGearHub.Promotions.Infrastructure/AlpineGearHub.Promotions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/SharedKernel/">
+    <Project Path="src/SharedKernel/AlpineGearHub.SharedKernel/AlpineGearHub.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AlpineGearHub.Api.Tests/AlpineGearHub.Api.Tests.csproj" />
+  </Folder>
+</Solution>
