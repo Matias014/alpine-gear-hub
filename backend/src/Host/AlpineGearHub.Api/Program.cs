@@ -1,10 +1,16 @@
 using System.Text;
+using AlpineGearHub.Api.Endpoints;
+using AlpineGearHub.Api.Middleware;
 using AlpineGearHub.Chat.Infrastructure;
+using AlpineGearHub.Identity.Domain.Entities;
+using AlpineGearHub.Identity.Domain.Enums;
 using AlpineGearHub.Identity.Infrastructure;
+using AlpineGearHub.Identity.Infrastructure.Data;
 using AlpineGearHub.Listings.Infrastructure;
 using AlpineGearHub.Moderation.Infrastructure;
 using AlpineGearHub.Promotions.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,7 +57,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero,
         };
 
-        // Allow JWT token in query string for SignalR connections
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -65,7 +70,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireModerator", p =>
+        p.RequireRole(UserRole.Moderator.ToString(), UserRole.Admin.ToString()));
+    options.AddPolicy("RequireAdmin", p =>
+        p.RequireRole(UserRole.Admin.ToString()));
+});
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
@@ -83,17 +94,34 @@ builder.Services.AddSignalR();
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 builder.Services
-    .AddIdentityModule()
+    .AddIdentityModule(builder.Configuration)
     .AddListingsModule()
     .AddChatModule()
     .AddModerationModule()
     .AddPromotionsModule();
 
-// ── Problem Details ───────────────────────────────────────────────────────────
+// ── Exception handling ────────────────────────────────────────────────────────
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// ── Migrations & seed ─────────────────────────────────────────────────────────
+app.Services.ApplyIdentityMigrations();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    if (!db.Users.Any(u => u.Role == UserRole.Admin))
+    {
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+        var passwordHash = hasher.HashPassword(null!, "Admin1234!");
+        var admin = User.Create("admin@alpinegearhub.local", "System Admin", passwordHash, UserRole.Admin);
+        db.Users.Add(admin);
+        db.SaveChanges();
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -110,7 +138,10 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
    .WithTags("Health")
    .AllowAnonymous();
 
+app.MapGroup("/api/auth")
+   .WithTags("Auth")
+   .MapAuthEndpoints();
+
 app.Run();
 
-// Required for WebApplicationFactory<Program> in integration tests
 public partial class Program { }
