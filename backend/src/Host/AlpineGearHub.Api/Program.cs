@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Middleware;
 using AlpineGearHub.Chat.Infrastructure;
@@ -16,6 +17,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── JSON (enums as strings in request/response bodies) ───────────────────────
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // ── API docs ──────────────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
@@ -47,6 +52,9 @@ var secret = jwtSection["Secret"]
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Map JWT "sub" → ClaimTypes.NameIdentifier (default is false since .NET 8)
+        options.MapInboundClaims = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

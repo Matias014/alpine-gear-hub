@@ -3,6 +3,7 @@ using AlpineGearHub.Listings.Domain.Exceptions;
 using AlpineGearHub.SharedKernel.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlpineGearHub.Api.Middleware;
@@ -16,6 +17,7 @@ namespace AlpineGearHub.Api.Middleware;
 ///   UnauthorizedAccessException             → 403 Forbidden
 ///   InvalidOperationException (not found)  → 404 Not Found
 ///   InvalidListingStatusTransitionException → 422 Unprocessable Entity
+///   BadHttpRequestException (invalid JSON)  → 400 Bad Request
 ///   DomainException (other)                → 422 Unprocessable Entity
 ///   Everything else                        → 500 Internal Server Error
 /// </summary>
@@ -58,6 +60,11 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
                 StatusCodes.Status404NotFound,
                 "Not found",
                 exception.Message),
+
+            BadHttpRequestException badRequest => (
+                StatusCodes.Status400BadRequest,
+                "Bad request",
+                badRequest.Message),
 
             DomainException => (
                 StatusCodes.Status422UnprocessableEntity,
