@@ -1,4 +1,5 @@
 using AlpineGearHub.Identity.Domain.Exceptions;
+using AlpineGearHub.Listings.Domain.Exceptions;
 using AlpineGearHub.SharedKernel.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
@@ -8,12 +9,15 @@ namespace AlpineGearHub.Api.Middleware;
 
 /// <summary>
 /// Maps well-known exceptions to consistent ProblemDetails responses (RFC 9457).
-///   ValidationException            → 422 Unprocessable Entity  (FluentValidation failures)
-///   EmailAlreadyTakenException     → 409 Conflict
-///   InvalidCredentialsException    → 401 Unauthorized
-///   InvalidRefreshTokenException   → 401 Unauthorized
-///   DomainException (other)        → 422 Unprocessable Entity
-///   Everything else                → 500 Internal Server Error
+///   ValidationException                     → 422 Unprocessable Entity
+///   EmailAlreadyTakenException              → 409 Conflict
+///   InvalidCredentialsException             → 401 Unauthorized
+///   InvalidRefreshTokenException            → 401 Unauthorized
+///   UnauthorizedAccessException             → 403 Forbidden
+///   InvalidOperationException (not found)  → 404 Not Found
+///   InvalidListingStatusTransitionException → 422 Unprocessable Entity
+///   DomainException (other)                → 422 Unprocessable Entity
+///   Everything else                        → 500 Internal Server Error
 /// </summary>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
     : IExceptionHandler
@@ -38,6 +42,21 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             InvalidCredentialsException or InvalidRefreshTokenException => (
                 StatusCodes.Status401Unauthorized,
                 "Unauthorized",
+                exception.Message),
+
+            UnauthorizedAccessException => (
+                StatusCodes.Status403Forbidden,
+                "Forbidden",
+                exception.Message),
+
+            InvalidListingStatusTransitionException => (
+                StatusCodes.Status422UnprocessableEntity,
+                "Invalid status transition",
+                exception.Message),
+
+            InvalidOperationException => (
+                StatusCodes.Status404NotFound,
+                "Not found",
                 exception.Message),
 
             DomainException => (

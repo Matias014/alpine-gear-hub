@@ -6,7 +6,9 @@ using AlpineGearHub.Identity.Domain.Entities;
 using AlpineGearHub.Identity.Domain.Enums;
 using AlpineGearHub.Identity.Infrastructure;
 using AlpineGearHub.Identity.Infrastructure.Data;
+using AlpineGearHub.Listings.Domain.Entities;
 using AlpineGearHub.Listings.Infrastructure;
+using AlpineGearHub.Listings.Infrastructure.Data;
 using AlpineGearHub.Moderation.Infrastructure;
 using AlpineGearHub.Promotions.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -95,7 +97,7 @@ builder.Services.AddSignalR();
 // ── Modules ───────────────────────────────────────────────────────────────────
 builder.Services
     .AddIdentityModule(builder.Configuration)
-    .AddListingsModule()
+    .AddListingsModule(builder.Configuration)
     .AddChatModule()
     .AddModerationModule()
     .AddPromotionsModule();
@@ -109,17 +111,41 @@ var app = builder.Build();
 
 // ── Migrations & seed ─────────────────────────────────────────────────────────
 app.Services.ApplyIdentityMigrations();
+app.Services.ApplyListingsMigrations();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    if (!db.Users.Any(u => u.Role == UserRole.Admin))
+    var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    if (!identityDb.Users.Any(u => u.Role == UserRole.Admin))
     {
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
         var passwordHash = hasher.HashPassword(null!, "Admin1234!");
         var admin = User.Create("admin@alpinegearhub.local", "System Admin", passwordHash, UserRole.Admin);
-        db.Users.Add(admin);
-        db.SaveChanges();
+        identityDb.Users.Add(admin);
+        identityDb.SaveChanges();
+    }
+
+    var listingsDb = scope.ServiceProvider.GetRequiredService<ListingsDbContext>();
+    if (!listingsDb.Categories.Any())
+    {
+        var categories = new[]
+        {
+            ("Ropes", "ropes"),
+            ("Harnesses", "harnesses"),
+            ("Helmets", "helmets"),
+            ("Carabiners & Quickdraws", "carabiners-quickdraws"),
+            ("Ice Axes & Crampons", "ice-axes-crampons"),
+            ("Boots & Shoes", "boots-shoes"),
+            ("Backpacks", "backpacks"),
+            ("Tents & Shelters", "tents-shelters"),
+            ("Clothing", "clothing"),
+            ("Other", "other"),
+        };
+
+        foreach (var (name, slug) in categories)
+            listingsDb.Categories.Add(Category.Create(name, slug));
+
+        listingsDb.SaveChanges();
     }
 }
 
@@ -141,6 +167,14 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
 app.MapGroup("/api/auth")
    .WithTags("Auth")
    .MapAuthEndpoints();
+
+app.MapGroup("/api/categories")
+   .WithTags("Categories")
+   .MapCategoryEndpoints();
+
+app.MapGroup("/api/listings")
+   .WithTags("Listings")
+   .MapListingEndpoints();
 
 app.Run();
 
