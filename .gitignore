@@ -9,8 +9,7 @@ _ReSharper*/
 TestResults/
 coverage/
 
-# EF Core migrations snapshots are committed; generated designer files are not
-*.Designer.cs
+# EF Core migration snapshots and Designer files are committed (required for Database.Migrate)
 
 # ── Node / Frontend ───────────────────────────────────────────────────────────
 node_modules/
