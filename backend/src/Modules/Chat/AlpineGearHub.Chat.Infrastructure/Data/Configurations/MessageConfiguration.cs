@@ -11,7 +11,10 @@ internal sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.ToTable("messages");
         builder.HasKey(m => m.Id);
 
-        builder.Property(m => m.Id).HasColumnName("id");
+        // Client-generated Guid: without this, EF assumes a non-default key means the row
+        // already exists (since Message is reached via fixup on an already-tracked Conversation,
+        // never an explicit Add()) and emits an UPDATE instead of an INSERT.
+        builder.Property(m => m.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(m => m.ConversationId).HasColumnName("conversation_id");
         builder.Property(m => m.SenderId).HasColumnName("sender_id");
         builder.Property(m => m.Body).HasColumnName("body").HasMaxLength(2000).IsRequired();

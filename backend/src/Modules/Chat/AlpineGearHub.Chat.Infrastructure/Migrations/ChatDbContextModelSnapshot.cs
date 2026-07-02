@@ -68,7 +68,6 @@ namespace AlpineGearHub.Chat.Infrastructure.Migrations
             modelBuilder.Entity("AlpineGearHub.Chat.Domain.Entities.Message", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 

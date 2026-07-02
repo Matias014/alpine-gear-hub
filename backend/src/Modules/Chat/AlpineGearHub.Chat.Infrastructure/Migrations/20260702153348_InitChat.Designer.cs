@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AlpineGearHub.Chat.Infrastructure.Migrations
 {
     [DbContext(typeof(ChatDbContext))]
-    [Migration("20260702151324_InitChat")]
+    [Migration("20260702153348_InitChat")]
     partial class InitChat
     {
         /// <inheritdoc />
@@ -71,7 +71,6 @@ namespace AlpineGearHub.Chat.Infrastructure.Migrations
             modelBuilder.Entity("AlpineGearHub.Chat.Domain.Entities.Message", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
