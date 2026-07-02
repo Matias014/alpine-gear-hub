@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
+using Testcontainers.Redis;
 
 namespace AlpineGearHub.Api.Tests;
 
@@ -11,13 +12,20 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         .WithImage("postgres:18")
         .Build();
 
+    // Added this after CI failed - the app now connects to Redis eagerly at startup (login
+    // rate limiting), and the hardcoded "localhost:6379" only worked on my machine because I
+    // happen to have a real Redis running there via docker-compose. CI has nothing at that address.
+    private readonly RedisContainer _redis = new RedisBuilder()
+        .WithImage("redis:7-alpine")
+        .Build();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting(
             "ConnectionStrings:DefaultConnection",
             _postgres.GetConnectionString());
 
-        builder.UseSetting("ConnectionStrings:Redis", "localhost:6379");
+        builder.UseSetting("ConnectionStrings:Redis", _redis.GetConnectionString());
 
         builder.UseSetting("Jwt:Secret", "test-secret-key-that-is-long-enough-32chars!");
         builder.UseSetting("Jwt:Issuer", "alpinegearhub-api");
@@ -30,11 +38,12 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         builder.UseSetting("Storage:PublicBaseUrl", "http://localhost:9000");
     }
 
-    public async Task InitializeAsync() => await _postgres.StartAsync();
+    public async Task InitializeAsync() =>
+        await Task.WhenAll(_postgres.StartAsync(), _redis.StartAsync());
 
     public new async Task DisposeAsync()
     {
-        await _postgres.DisposeAsync();
+        await Task.WhenAll(_postgres.DisposeAsync().AsTask(), _redis.DisposeAsync().AsTask());
         await base.DisposeAsync();
     }
 }
