@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Middleware;
 using AlpineGearHub.Chat.Infrastructure;
+using AlpineGearHub.Chat.Infrastructure.Hubs;
 using AlpineGearHub.Identity.Domain.Entities;
 using AlpineGearHub.Identity.Domain.Enums;
 using AlpineGearHub.Identity.Infrastructure;
@@ -106,7 +107,7 @@ builder.Services.AddSignalR();
 builder.Services
     .AddIdentityModule(builder.Configuration)
     .AddListingsModule(builder.Configuration)
-    .AddChatModule()
+    .AddChatModule(builder.Configuration)
     .AddModerationModule()
     .AddPromotionsModule();
 
@@ -120,6 +121,7 @@ var app = builder.Build();
 // ── Migrations & seed ─────────────────────────────────────────────────────────
 app.Services.ApplyIdentityMigrations();
 app.Services.ApplyListingsMigrations();
+app.Services.ApplyChatMigrations();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -183,6 +185,12 @@ app.MapGroup("/api/categories")
 app.MapGroup("/api/listings")
    .WithTags("Listings")
    .MapListingEndpoints();
+
+app.MapGroup("/api/chat")
+   .WithTags("Chat")
+   .MapChatEndpoints();
+
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
 
