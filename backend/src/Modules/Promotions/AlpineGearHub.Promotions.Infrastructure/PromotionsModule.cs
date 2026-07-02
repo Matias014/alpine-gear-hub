@@ -27,6 +27,8 @@ public static class PromotionsModule
 
         services.AddScoped<IValidator<CreatePromotionCommand>, CreatePromotionCommandValidator>();
 
+        services.AddHealthChecks().AddDbContextCheck<PromotionsDbContext>("promotions-db");
+
         return services;
     }
 

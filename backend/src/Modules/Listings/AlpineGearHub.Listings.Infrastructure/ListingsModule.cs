@@ -49,6 +49,8 @@ public static class ListingsModule
 
         services.AddScoped<IValidator<CreateListingCommand>, CreateListingCommandValidator>();
 
+        services.AddHealthChecks().AddDbContextCheck<ListingsDbContext>("listings-db");
+
         return services;
     }
 

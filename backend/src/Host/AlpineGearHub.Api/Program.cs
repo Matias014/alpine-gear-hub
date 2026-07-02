@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Middleware;
@@ -15,9 +16,44 @@ using AlpineGearHub.Moderation.Infrastructure;
 using AlpineGearHub.Promotions.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// Bootstrap logger so I still get logs if something blows up before the host's own logger is ready.
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
+try
+{
+    RunApp(args);
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    // HostAbortedException is how WebApplicationFactory<Program> (our integration tests) grabs the
+    // builder without actually starting the host - swallowing it here would break that mechanism.
+    Log.Fatal(ex, "Host terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+return;
+
+void RunApp(string[] runArgs)
+{
+var builder = WebApplication.CreateBuilder(runArgs);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .WriteTo.Console());
 
 // ── JSON (enums as strings in request/response bodies) ───────────────────────
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -118,6 +154,8 @@ builder.Services.AddProblemDetails();
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+app.UseSerilogRequestLogging();
+
 // ── Migrations & seed ─────────────────────────────────────────────────────────
 app.Services.ApplyIdentityMigrations();
 app.Services.ApplyListingsMigrations();
@@ -172,7 +210,26 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+// Wired this up to actually ping Postgres/Redis instead of always saying "healthy" -
+// caught myself relying on the old hardcoded version during earlier phases' testing.
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var payload = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+            }),
+        });
+        await context.Response.WriteAsync(payload);
+    },
+})
    .WithTags("Health")
    .AllowAnonymous();
 
@@ -203,5 +260,6 @@ app.MapGroup("/api/promotions")
    .MapPromotionsEndpoints();
 
 app.Run();
+}
 
 public partial class Program { }

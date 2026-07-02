@@ -29,6 +29,8 @@ public static class ChatModule
         services.AddScoped<IValidator<StartConversationCommand>, StartConversationCommandValidator>();
         services.AddScoped<IValidator<SendMessageCommand>, SendMessageCommandValidator>();
 
+        services.AddHealthChecks().AddDbContextCheck<ChatDbContext>("chat-db");
+
         return services;
     }
 

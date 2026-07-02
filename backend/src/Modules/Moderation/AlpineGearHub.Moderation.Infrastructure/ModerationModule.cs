@@ -24,6 +24,8 @@ public static class ModerationModule
 
         services.AddScoped<IValidator<CreateReportCommand>, CreateReportCommandValidator>();
 
+        services.AddHealthChecks().AddDbContextCheck<ModerationDbContext>("moderation-db");
+
         return services;
     }
 

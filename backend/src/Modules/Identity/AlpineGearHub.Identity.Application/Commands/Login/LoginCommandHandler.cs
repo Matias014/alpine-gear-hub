@@ -11,20 +11,34 @@ namespace AlpineGearHub.Identity.Application.Commands.Login;
 public sealed class LoginCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher<User> passwordHasher,
-    ITokenService tokenService)
+    ITokenService tokenService,
+    ILoginRateLimiter loginRateLimiter)
     : IRequestHandler<LoginCommand, AuthResponse>
 {
     public async Task<AuthResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetByEmailAsync(
-            request.Email.Trim().ToLowerInvariant(), cancellationToken);
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        // Checking the limiter before touching the DB, so a locked-out account doesn't cost us a query too.
+        if (await loginRateLimiter.IsBlockedAsync(email, cancellationToken))
+            throw new TooManyLoginAttemptsException();
+
+        var user = await userRepository.GetByEmailAsync(email, cancellationToken);
 
         if (user is null)
+        {
+            await loginRateLimiter.RegisterFailedAttemptAsync(email, cancellationToken);
             throw new InvalidCredentialsException();
+        }
 
         var result = passwordHasher.VerifyHashedPassword(null!, user.PasswordHash, request.Password);
         if (result == PasswordVerificationResult.Failed)
+        {
+            await loginRateLimiter.RegisterFailedAttemptAsync(email, cancellationToken);
             throw new InvalidCredentialsException();
+        }
+
+        await loginRateLimiter.ResetAsync(email, cancellationToken);
 
         var accessToken = tokenService.GenerateAccessToken(user);
         var (rawRefresh, refreshHash, refreshExpiry) = tokenService.GenerateRefreshToken();
