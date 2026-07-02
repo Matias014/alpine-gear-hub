@@ -120,6 +120,7 @@ Table reports {
   status report_status
   reviewed_by_user_id uuid [ref: > users.id]
   reviewed_at timestamp
+  created_at timestamp
 }
 
 Table promotions {

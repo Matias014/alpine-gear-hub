@@ -108,7 +108,7 @@ builder.Services
     .AddIdentityModule(builder.Configuration)
     .AddListingsModule(builder.Configuration)
     .AddChatModule(builder.Configuration)
-    .AddModerationModule()
+    .AddModerationModule(builder.Configuration)
     .AddPromotionsModule();
 
 // ── Exception handling ────────────────────────────────────────────────────────
@@ -122,6 +122,7 @@ var app = builder.Build();
 app.Services.ApplyIdentityMigrations();
 app.Services.ApplyListingsMigrations();
 app.Services.ApplyChatMigrations();
+app.Services.ApplyModerationMigrations();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -191,6 +192,10 @@ app.MapGroup("/api/chat")
    .MapChatEndpoints();
 
 app.MapHub<ChatHub>("/hubs/chat");
+
+app.MapGroup("/api/moderation")
+   .WithTags("Moderation")
+   .MapModerationEndpoints();
 
 app.Run();
 

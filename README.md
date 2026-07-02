@@ -191,6 +191,7 @@ erDiagram
         varchar status
         uuid reviewed_by_user_id FK
         timestamp reviewed_at
+        timestamp created_at
     }
     PROMOTIONS {
         uuid id PK

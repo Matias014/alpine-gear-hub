@@ -98,6 +98,7 @@
 | Status             | ReportStatus | enum: Pending, Reviewed, Dismissed         |
 | ReviewedByUserId   | Guid? (FK)   | → User (Moderator or Admin), null until reviewed |
 | ReviewedAt         | DateTime?    |                                            |
+| CreatedAt          | DateTime     |                                            |
 
 ---
 
