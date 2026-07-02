@@ -12,6 +12,7 @@ public record ListingResponse(
     string Condition,
     string Status,
     string Location,
+    bool IsPromoted,
     DateTime CreatedAt,
     DateTime? ExpiresAt,
     IReadOnlyList<ListingImageResponse> Images);

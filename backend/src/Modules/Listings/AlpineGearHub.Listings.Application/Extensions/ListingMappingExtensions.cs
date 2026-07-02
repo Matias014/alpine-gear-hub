@@ -19,6 +19,7 @@ internal static class ListingMappingExtensions
             listing.Condition.ToString(),
             listing.Status.ToString(),
             listing.Location,
+            listing.IsPromoted,
             listing.CreatedAt,
             listing.ExpiresAt,
             listing.Images

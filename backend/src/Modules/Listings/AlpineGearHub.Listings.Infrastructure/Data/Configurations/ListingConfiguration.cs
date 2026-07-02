@@ -20,6 +20,7 @@ internal sealed class ListingConfiguration : IEntityTypeConfiguration<Listing>
         builder.Property(l => l.Condition).HasColumnName("condition").HasConversion<string>().HasMaxLength(50);
         builder.Property(l => l.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(50);
         builder.Property(l => l.Location).HasColumnName("location").HasMaxLength(120).IsRequired();
+        builder.Property(l => l.IsPromoted).HasColumnName("is_promoted");
         builder.Property(l => l.CreatedAt).HasColumnName("created_at");
         builder.Property(l => l.UpdatedAt).HasColumnName("updated_at");
         builder.Property(l => l.ExpiresAt).HasColumnName("expires_at").IsRequired(false);

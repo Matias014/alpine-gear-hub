@@ -48,7 +48,8 @@ internal sealed class ListingRepository(ListingsDbContext db) : IListingReposito
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
-            .OrderByDescending(l => l.CreatedAt)
+            .OrderByDescending(l => l.IsPromoted)
+            .ThenByDescending(l => l.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
             .ToListAsync(ct);

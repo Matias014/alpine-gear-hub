@@ -37,6 +37,7 @@ internal sealed class GetListingsQueryHandler(
                 l.Condition.ToString(),
                 l.Status.ToString(),
                 l.Location,
+                l.IsPromoted,
                 primaryImage is not null ? fileStorage.GetPublicUrl(primaryImage) : null,
                 l.CreatedAt);
         }).ToList();

@@ -21,6 +21,7 @@ public class Listing : AggregateRoot
     public GearCondition Condition { get; private set; }
     public ListingStatus Status { get; private set; }
     public string Location { get; private set; } = string.Empty;
+    public bool IsPromoted { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
     public DateTime? ExpiresAt { get; private set; }
@@ -118,6 +119,12 @@ public class Listing : AggregateRoot
         ExpiresAt = null;
         UpdatedAt = DateTime.UtcNow;
         RaiseDomainEvent(new ListingRemovedEvent(Id, SellerId));
+    }
+
+    public void SetPromoted(bool isPromoted)
+    {
+        IsPromoted = isPromoted;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public ListingImage AddImage(string storageKey)

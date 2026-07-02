@@ -9,5 +9,6 @@ public record ListingSummaryResponse(
     string Condition,
     string Status,
     string Location,
+    bool IsPromoted,
     string? PrimaryImageUrl,
     DateTime CreatedAt);
