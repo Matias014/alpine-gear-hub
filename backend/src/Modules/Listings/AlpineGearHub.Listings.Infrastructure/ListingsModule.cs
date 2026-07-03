@@ -11,6 +11,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace AlpineGearHub.Listings.Infrastructure;
 
@@ -66,29 +67,45 @@ public static class ListingsModule
     // Found out the hard way that MinIO doesn't come with the bucket pre-created, and even once
     // it exists it's private by default - image uploads and GetPublicUrl both silently assumed
     // otherwise, so nobody had actually driven this end to end before.
+    //
+    // This runs at startup, before app.Run() - and that turned out to break every integration
+    // test in CI, where there's no MinIO at all (only Testcontainers-managed Postgres/Redis).
+    // WebApplicationFactory's test-host capture only fires inside Run(), so an unhandled
+    // exception here was silently killing the whole host before that could happen, and every
+    // test failed with "no web application was configured" instead of a storage-specific error.
+    // Catching and logging instead means the app still boots (and still works fully) even if
+    // object storage happens to be unreachable - only image uploads would fail, not everything.
     public static async Task EnsureStorageBucketExistsAsync(this IServiceProvider services, IConfiguration configuration)
     {
         using var scope = services.CreateScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<IFileStorage>>();
         var s3 = scope.ServiceProvider.GetRequiredService<IAmazonS3>();
         var bucket = configuration["Storage:BucketName"] ?? "alpine-gear-hub";
 
-        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucket))
-            await s3.PutBucketAsync(bucket);
+        try
+        {
+            if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucket))
+                await s3.PutBucketAsync(bucket);
 
-        var publicReadPolicy = $$"""
-            {
-              "Version": "2012-10-17",
-              "Statement": [
+            var publicReadPolicy = $$"""
                 {
-                  "Effect": "Allow",
-                  "Principal": "*",
-                  "Action": ["s3:GetObject"],
-                  "Resource": ["arn:aws:s3:::{{bucket}}/*"]
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": "*",
+                      "Action": ["s3:GetObject"],
+                      "Resource": ["arn:aws:s3:::{{bucket}}/*"]
+                    }
+                  ]
                 }
-              ]
-            }
-            """;
+                """;
 
-        await s3.PutBucketPolicyAsync(bucket, publicReadPolicy);
+            await s3.PutBucketPolicyAsync(bucket, publicReadPolicy);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not reach object storage to ensure the bucket exists - image uploads will fail until it's reachable");
+        }
     }
 }
