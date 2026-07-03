@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
+import { RequireModerator } from './components/RequireModerator'
 import ConversationPage from './pages/ConversationPage'
 import ConversationsPage from './pages/ConversationsPage'
 import CreateListingPage from './pages/CreateListingPage'
@@ -9,6 +10,7 @@ import HomePage from './pages/HomePage'
 import ListingDetailPage from './pages/ListingDetailPage'
 import ListingsPage from './pages/ListingsPage'
 import LoginPage from './pages/LoginPage'
+import ModerationPage from './pages/ModerationPage'
 import RegisterPage from './pages/RegisterPage'
 
 export default function App() {
@@ -50,6 +52,14 @@ export default function App() {
             <RequireAuth>
               <ConversationPage />
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/moderation"
+          element={
+            <RequireModerator>
+              <ModerationPage />
+            </RequireModerator>
           }
         />
       </Route>

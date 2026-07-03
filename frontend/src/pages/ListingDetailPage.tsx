@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ReportListingForm } from '../components/ReportListingForm'
 import { useAuth } from '../contexts/AuthContext'
 import { useStartConversation } from '../hooks/useChat'
 import { useListing } from '../hooks/useListings'
@@ -13,6 +14,8 @@ export default function ListingDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const startConversation = useStartConversation()
   const [messageError, setMessageError] = useState<string | null>(null)
+  const [showReportForm, setShowReportForm] = useState(false)
+  const [reportSubmitted, setReportSubmitted] = useState(false)
 
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
   if (isError || !listing) return <p className="text-sm text-red-600">This listing couldn&apos;t be found.</p>
@@ -124,6 +127,30 @@ export default function ListingDetailPage() {
               </Link>
             )}
             {messageError && <p className="mt-2 text-sm text-red-600">{messageError}</p>}
+          </div>
+        )}
+
+        {!isOwner && isAuthenticated && (
+          <div className="mt-3">
+            {reportSubmitted ? (
+              <p className="text-sm text-gray-500">Thanks - a moderator will take a look.</p>
+            ) : showReportForm ? (
+              <ReportListingForm
+                listingId={listing.id}
+                onDone={() => {
+                  setShowReportForm(false)
+                  setReportSubmitted(true)
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowReportForm(true)}
+                className="text-sm text-gray-500 hover:text-red-600 hover:underline"
+              >
+                Report this listing
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -37,6 +37,11 @@ export function Layout() {
                     </span>
                   )}
                 </Link>
+                {(user.role === 'Moderator' || user.role === 'Admin') && (
+                  <Link to="/moderation" className="text-gray-600 hover:text-gray-900">
+                    Moderation
+                  </Link>
+                )}
                 <button type="button" onClick={logout} className="text-gray-600 hover:text-gray-900">
                   Log out
                 </button>

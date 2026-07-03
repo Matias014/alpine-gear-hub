@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
 import { FormField, formInputClasses } from '../components/FormField'
+import { PromotionCheckout } from '../components/PromotionCheckout'
 import { useAuth } from '../contexts/AuthContext'
 import {
   useChangeListingStatus,
@@ -169,6 +170,15 @@ export default function EditListingPage() {
           )}
         </div>
       </section>
+
+      {(listing.status === 'Active' || listing.status === 'Reserved') && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-900">Promotion</h2>
+          <div className="mt-2">
+            <PromotionCheckout listingId={listing.id} />
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="text-sm font-semibold text-gray-900">Details</h2>
