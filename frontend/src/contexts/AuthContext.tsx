@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { authApi } from '../lib/authApi'
+import { decodeJwtSubject } from '../lib/jwt'
 import { setOnAuthExpired, tokenStorage } from '../lib/tokenStorage'
-import type { LoginRequest, RegisterRequest, UserRole } from '../types/auth'
+import type { AuthResponse, LoginRequest, RegisterRequest, UserRole } from '../types/auth'
 
 interface AuthUser {
+  id: string
   fullName: string
   email: string
   role: UserRole
@@ -20,8 +22,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function toUser({ fullName, email, role }: { fullName: string; email: string; role: UserRole }): AuthUser {
-  return { fullName, email, role }
+function toUser(auth: AuthResponse): AuthUser | null {
+  const id = decodeJwtSubject(auth.accessToken)
+  if (!id) return null
+  return { id, fullName: auth.fullName, email: auth.email, role: auth.role }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -36,21 +36,20 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshPromise
 }
 
-async function request<T>(path: string, init?: RequestInit, isRetry = false): Promise<T> {
+async function send<T>(path: string, init: RequestInit, isRetry = false): Promise<T> {
   const token = tokenStorage.get()?.accessToken
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init?.headers,
+      ...init.headers,
     },
   })
 
   if (res.status === 401 && !isRetry && !AUTH_PATHS_WITHOUT_RETRY.includes(path)) {
     const newToken = await refreshAccessToken()
-    if (newToken) return request<T>(path, init, true)
+    if (newToken) return send<T>(path, init, true)
   }
 
   if (!res.ok) {
@@ -63,6 +62,10 @@ async function request<T>(path: string, init?: RequestInit, isRetry = false): Pr
   return res.json()
 }
 
+function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return send<T>(path, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } })
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) =>
@@ -70,4 +73,10 @@ export const api = {
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  // No Content-Type header here on purpose - the browser needs to set its own multipart boundary.
+  upload: <T>(path: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return send<T>(path, { method: 'POST', body: formData })
+  },
 }
