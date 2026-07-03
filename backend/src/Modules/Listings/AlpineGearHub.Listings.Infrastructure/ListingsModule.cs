@@ -5,6 +5,7 @@ using AlpineGearHub.Listings.Infrastructure.Data;
 using AlpineGearHub.Listings.Infrastructure.Repositories;
 using AlpineGearHub.Listings.Infrastructure.Services;
 using Amazon.S3;
+using Amazon.S3.Util;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -60,5 +61,34 @@ public static class ListingsModule
         scope.ServiceProvider
             .GetRequiredService<ListingsDbContext>()
             .Database.Migrate();
+    }
+
+    // Found out the hard way that MinIO doesn't come with the bucket pre-created, and even once
+    // it exists it's private by default - image uploads and GetPublicUrl both silently assumed
+    // otherwise, so nobody had actually driven this end to end before.
+    public static async Task EnsureStorageBucketExistsAsync(this IServiceProvider services, IConfiguration configuration)
+    {
+        using var scope = services.CreateScope();
+        var s3 = scope.ServiceProvider.GetRequiredService<IAmazonS3>();
+        var bucket = configuration["Storage:BucketName"] ?? "alpine-gear-hub";
+
+        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucket))
+            await s3.PutBucketAsync(bucket);
+
+        var publicReadPolicy = $$"""
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": ["s3:GetObject"],
+                  "Resource": ["arn:aws:s3:::{{bucket}}/*"]
+                }
+              ]
+            }
+            """;
+
+        await s3.PutBucketPolicyAsync(bucket, publicReadPolicy);
     }
 }

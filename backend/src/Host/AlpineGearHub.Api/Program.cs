@@ -162,6 +162,7 @@ app.Services.ApplyListingsMigrations();
 app.Services.ApplyChatMigrations();
 app.Services.ApplyModerationMigrations();
 app.Services.ApplyPromotionsMigrations();
+app.Services.EnsureStorageBucketExistsAsync(app.Configuration).GetAwaiter().GetResult();
 
 using (var scope = app.Services.CreateScope())
 {

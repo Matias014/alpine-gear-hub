@@ -20,13 +20,15 @@ internal sealed class MinioFileStorage : IFileStorage
 
     public async Task<string> UploadAsync(Stream content, string storageKey, string contentType, CancellationToken ct = default)
     {
+        // DisablePayloadSigning used to be set here, presumably as a MinIO workaround, but the
+        // AWS SDK now refuses that combo over plain HTTP ("must be sent over HTTPS") - and MinIO
+        // signs payloads over HTTP fine anyway, so this was just breaking uploads outright.
         var request = new PutObjectRequest
         {
             BucketName = _bucket,
             Key = storageKey,
             InputStream = content,
             ContentType = contentType,
-            DisablePayloadSigning = true,
         };
 
         await _s3.PutObjectAsync(request, ct);
