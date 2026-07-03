@@ -1,20 +1,34 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useStartConversation } from '../hooks/useChat'
 import { useListing } from '../hooks/useListings'
 import { conditionLabels, formatPrice, statusStyles } from '../lib/listingLabels'
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
   const { data: listing, isLoading, isError } = useListing(id)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const startConversation = useStartConversation()
+  const [messageError, setMessageError] = useState<string | null>(null)
 
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
   if (isError || !listing) return <p className="text-sm text-red-600">This listing couldn&apos;t be found.</p>
 
   const isOwner = user?.id === listing.sellerId
   const activeImage = listing.images[activeImageIndex]
+
+  async function handleMessageSeller() {
+    setMessageError(null)
+    try {
+      const conversation = await startConversation.mutateAsync(listing!.id)
+      navigate(`/messages/${conversation.id}`)
+    } catch (err) {
+      setMessageError(err instanceof Error ? err.message : 'Could not start a conversation')
+    }
+  }
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -90,6 +104,26 @@ export default function ListingDetailPage() {
             <Link to={`/listings/${listing.id}/edit`} className="font-medium text-emerald-700 hover:underline">
               Manage it
             </Link>
+          </div>
+        )}
+
+        {!isOwner && (
+          <div className="mt-6">
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={handleMessageSeller}
+                disabled={startConversation.isPending}
+                className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+              >
+                {startConversation.isPending ? 'Starting…' : 'Message seller'}
+              </button>
+            ) : (
+              <Link to="/login" state={{ from: `/listings/${listing.id}` }} className="text-sm text-emerald-700 hover:underline">
+                Log in to message the seller
+              </Link>
+            )}
+            {messageError && <p className="mt-2 text-sm text-red-600">{messageError}</p>}
           </div>
         )}
       </div>

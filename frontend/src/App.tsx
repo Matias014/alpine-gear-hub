@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
+import ConversationPage from './pages/ConversationPage'
+import ConversationsPage from './pages/ConversationsPage'
 import CreateListingPage from './pages/CreateListingPage'
 import EditListingPage from './pages/EditListingPage'
 import HomePage from './pages/HomePage'
@@ -31,6 +33,22 @@ export default function App() {
           element={
             <RequireAuth>
               <EditListingPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <RequireAuth>
+              <ConversationsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/messages/:id"
+          element={
+            <RequireAuth>
+              <ConversationPage />
             </RequireAuth>
           }
         />

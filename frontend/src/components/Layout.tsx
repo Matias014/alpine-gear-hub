@@ -1,8 +1,12 @@
 import { Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useUnreadMessagesCount } from '../hooks/useChat'
+import { useChatNotifications } from '../hooks/useChatNotifications'
 
 export function Layout() {
   const { user, isAuthenticated, logout } = useAuth()
+  const unreadCount = useUnreadMessagesCount()
+  useChatNotifications()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -24,6 +28,14 @@ export function Layout() {
                 </Link>
                 <Link to={`/listings?sellerId=${user.id}`} className="text-gray-600 hover:text-gray-900">
                   My listings
+                </Link>
+                <Link to="/messages" className="relative text-gray-600 hover:text-gray-900">
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-3 -top-2 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
                 <button type="button" onClick={logout} className="text-gray-600 hover:text-gray-900">
                   Log out
