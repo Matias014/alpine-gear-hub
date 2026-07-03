@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
+import { AuthProvider } from '../contexts/AuthContext'
 
 function renderApp() {
   const queryClient = new QueryClient({
@@ -11,7 +12,9 @@ function renderApp() {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   )
