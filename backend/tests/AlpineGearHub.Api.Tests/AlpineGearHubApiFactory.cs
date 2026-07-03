@@ -36,6 +36,11 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         builder.UseSetting("Storage:SecretKey", "minioadmin");
         builder.UseSetting("Storage:BucketName", "alpine-gear-hub");
         builder.UseSetting("Storage:PublicBaseUrl", "http://localhost:9000");
+
+        // Pinning these explicitly rather than relying on appsettings.Development.json loading -
+        // WebhookSigner.cs below needs to know the exact secret to sign test payloads against.
+        builder.UseSetting("Stripe:SecretKey", "sk_test_placeholder");
+        builder.UseSetting("Stripe:WebhookSecret", "whsec_test_secret_for_integration_tests");
     }
 
     public async Task InitializeAsync() =>

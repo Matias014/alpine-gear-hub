@@ -10,6 +10,8 @@ public sealed class ApiClient(HttpClient http)
 
     public Task<HttpResponseMessage> GetAsync(string url) => http.GetAsync(url);
 
+    public Task<HttpResponseMessage> PostAsync(string url) => http.PostAsync(url, null);
+
     public Task<HttpResponseMessage> PostAsync<T>(string url, T body) =>
         http.PostAsJsonAsync(url, body);
 

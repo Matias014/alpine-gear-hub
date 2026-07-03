@@ -2,8 +2,8 @@ using AlpineGearHub.Api.Tests.Helpers;
 
 namespace AlpineGearHub.Api.Tests;
 
+[Collection(DatabaseCollection.Name)]
 public sealed class HealthTests(AlpineGearHubApiFactory factory)
-    : IClassFixture<AlpineGearHubApiFactory>
 {
     private readonly ApiClient _client = new(factory.CreateClient());
 
