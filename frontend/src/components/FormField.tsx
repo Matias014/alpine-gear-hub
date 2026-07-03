@@ -8,7 +8,7 @@ interface FormFieldProps {
 }
 
 export const formInputClasses =
-  'block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm ' +
+  'block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors ' +
   'focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600'
 
 export function FormField({ label, htmlFor, error, children }: FormFieldProps) {

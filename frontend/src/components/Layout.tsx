@@ -10,26 +10,26 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-lg font-bold text-gray-900">
-            AlpineGearHub
+          <Link to="/" className="text-lg font-bold tracking-tight text-gray-900">
+            Alpine<span className="text-emerald-600">Gear</span>Hub
           </Link>
 
-          <nav className="flex items-center gap-4 text-sm">
-            <Link to="/listings" className="text-gray-600 hover:text-gray-900">
+          <nav className="flex items-center gap-5 text-sm">
+            <Link to="/listings" className="text-gray-600 transition-colors hover:text-gray-900">
               Browse
             </Link>
 
             {isAuthenticated && user ? (
               <>
-                <Link to="/listings/new" className="text-gray-600 hover:text-gray-900">
-                  Sell gear
-                </Link>
-                <Link to={`/listings?sellerId=${user.id}`} className="text-gray-600 hover:text-gray-900">
+                <Link
+                  to={`/listings?sellerId=${user.id}`}
+                  className="text-gray-600 transition-colors hover:text-gray-900"
+                >
                   My listings
                 </Link>
-                <Link to="/messages" className="relative text-gray-600 hover:text-gray-900">
+                <Link to="/messages" className="relative text-gray-600 transition-colors hover:text-gray-900">
                   Messages
                   {unreadCount > 0 && (
                     <span className="absolute -right-3 -top-2 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
@@ -38,20 +38,33 @@ export function Layout() {
                   )}
                 </Link>
                 {(user.role === 'Moderator' || user.role === 'Admin') && (
-                  <Link to="/moderation" className="text-gray-600 hover:text-gray-900">
+                  <Link to="/moderation" className="text-gray-600 transition-colors hover:text-gray-900">
                     Moderation
                   </Link>
                 )}
-                <button type="button" onClick={logout} className="text-gray-600 hover:text-gray-900">
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="text-gray-600 transition-colors hover:text-gray-900"
+                >
                   Log out
                 </button>
+                <Link
+                  to="/listings/new"
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
+                >
+                  Sell gear
+                </Link>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-gray-600 hover:text-gray-900">
+                <Link to="/login" className="text-gray-600 transition-colors hover:text-gray-900">
                   Log in
                 </Link>
-                <Link to="/register" className="font-medium text-emerald-700 hover:underline">
+                <Link
+                  to="/register"
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
+                >
                   Register
                 </Link>
               </>
@@ -60,7 +73,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 py-8">
         <Outlet />
       </main>
     </div>

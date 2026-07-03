@@ -23,8 +23,8 @@ function renderApp() {
 describe('App', () => {
   it('renders without crashing', () => {
     renderApp()
-    // "AlpineGearHub" now also appears in the persistent nav bar's home link, so this has to be
-    // scoped to the page heading specifically rather than matching on text alone.
-    expect(screen.getByRole('heading', { name: 'AlpineGearHub' })).toBeInTheDocument()
+    // HomePage's own heading is now marketing copy, not the "AlpineGearHub" wordmark - that
+    // only lives in the persistent nav bar now, as a link rather than a heading.
+    expect(screen.getByRole('link', { name: 'AlpineGearHub' })).toBeInTheDocument()
   })
 })
