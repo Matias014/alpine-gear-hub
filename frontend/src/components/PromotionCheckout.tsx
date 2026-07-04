@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useCreatePromotion, usePromotionsForListing } from '../hooks/usePromotions'
 import { stripePromise } from '../lib/stripe'
+import { buttonPrimary } from '../lib/uiClasses'
 import type { PromotionTier } from '../types/promotion'
 
 // Prices/durations mirror PromotionPricing on the backend exactly - if that ever changes, this
@@ -55,8 +56,8 @@ export function PromotionCheckout({ listingId }: { listingId: string }) {
       {TIERS.map((option) => (
         <label
           key={option.value}
-          className={`block cursor-pointer rounded-md border p-3 text-sm ${
-            tier === option.value ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300'
+          className={`block cursor-pointer rounded-lg border p-3 text-sm transition-colors ${
+            tier === option.value ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300 hover:bg-gray-50'
           }`}
         >
           <input
@@ -74,12 +75,7 @@ export function PromotionCheckout({ listingId }: { listingId: string }) {
 
       {createError && <p className="text-sm text-red-600">{createError}</p>}
 
-      <button
-        type="button"
-        onClick={handleStartCheckout}
-        disabled={createPromotion.isPending}
-        className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-      >
+      <button type="button" onClick={handleStartCheckout} disabled={createPromotion.isPending} className={buttonPrimary}>
         {createPromotion.isPending ? 'Starting checkout…' : 'Promote this listing'}
       </button>
     </div>
@@ -114,12 +110,7 @@ function PaymentForm() {
     <div className="space-y-3">
       <PaymentElement />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="button"
-        onClick={handleConfirm}
-        disabled={!stripe || isSubmitting}
-        className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-      >
+      <button type="button" onClick={handleConfirm} disabled={!stripe || isSubmitting} className={buttonPrimary}>
         {isSubmitting ? 'Processing…' : 'Pay now'}
       </button>
     </div>

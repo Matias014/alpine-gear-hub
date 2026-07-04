@@ -14,6 +14,7 @@ import {
   useUploadListingImage,
 } from '../hooks/useListings'
 import { conditionLabels, statusStyles } from '../lib/listingLabels'
+import { buttonPrimary } from '../lib/uiClasses'
 import {
   updateListingSchema,
   type UpdateListingFormInput,
@@ -60,9 +61,18 @@ export default function EditListingPage() {
   })
 
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
-  if (!listing) return <p className="text-sm text-red-600">This listing couldn&apos;t be found.</p>
+  if (!listing)
+    return (
+      <div className="rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center">
+        <p className="text-sm text-red-600">This listing couldn&apos;t be found.</p>
+      </div>
+    )
   if (user?.id !== listing.sellerId) {
-    return <p className="text-sm text-red-600">Only the seller can manage this listing.</p>
+    return (
+      <div className="rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center">
+        <p className="text-sm text-red-600">Only the seller can manage this listing.</p>
+      </div>
+    )
   }
 
   async function onSubmit(values: UpdateListingFormValues) {
@@ -92,24 +102,24 @@ export default function EditListingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
+    <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Manage listing</h1>
-        <span className={`mt-1 inline-block rounded px-2 py-1 text-xs font-medium ${statusStyles[listing.status]}`}>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Manage listing</h1>
+        <span className={`mt-2 inline-block rounded px-2 py-1 text-xs font-medium ${statusStyles[listing.status]}`}>
           {listing.status}
         </span>
       </div>
 
-      <section>
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-900">Photos</h2>
-        <div className="mt-2 flex flex-wrap gap-3">
+        <div className="mt-3 flex flex-wrap gap-3">
           {listing.images.map((image) => (
-            <div key={image.id} className="relative h-20 w-20 overflow-hidden rounded-md border border-gray-200">
+            <div key={image.id} className="group relative h-20 w-20 overflow-hidden rounded-lg border border-gray-200">
               <img src={image.url} alt="" className="h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => runAction(() => deleteImage.mutateAsync(image.id))}
-                className="absolute right-0 top-0 rounded-bl bg-black/60 px-1 text-xs text-white"
+                className="absolute right-0 top-0 rounded-bl-lg bg-black/60 px-1.5 py-0.5 text-xs text-white transition-colors hover:bg-red-600"
               >
                 ✕
               </button>
@@ -133,10 +143,10 @@ export default function EditListingPage() {
         )}
       </section>
 
-      <section>
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-900">Status</h2>
         {actionError && <p className="mt-1 text-sm text-red-600">{actionError}</p>}
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {listing.status === 'Draft' && (
             <ActionButton onClick={() => runAction(() => publishListing.mutateAsync())}>Publish</ActionButton>
           )}
@@ -172,17 +182,17 @@ export default function EditListingPage() {
       </section>
 
       {(listing.status === 'Active' || listing.status === 'Reserved') && (
-        <section>
+        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900">Promotion</h2>
-          <div className="mt-2">
+          <div className="mt-3">
             <PromotionCheckout listingId={listing.id} />
           </div>
         </section>
       )}
 
-      <section>
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-900">Details</h2>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-2 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-3 space-y-4">
           <FormField label="Title" htmlFor="title" error={errors.title?.message}>
             <input id="title" type="text" className={formInputClasses} {...register('title')} />
           </FormField>
@@ -230,11 +240,7 @@ export default function EditListingPage() {
 
           {formError && <p className="text-sm text-red-600">{formError}</p>}
 
-          <button
-            type="submit"
-            disabled={isSubmitting || !isDirty}
-            className="w-full rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-          >
+          <button type="submit" disabled={isSubmitting || !isDirty} className={`w-full ${buttonPrimary}`}>
             {isSubmitting ? 'Saving…' : 'Save changes'}
           </button>
         </form>
@@ -256,8 +262,10 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
-        danger ? 'border-red-300 text-red-700 hover:bg-red-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+        danger
+          ? 'border-red-300 text-red-700 hover:bg-red-50'
+          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
       }`}
     >
       {children}

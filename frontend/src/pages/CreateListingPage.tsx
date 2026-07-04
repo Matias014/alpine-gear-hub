@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { FormField, formInputClasses } from '../components/FormField'
 import { useCategories, useCreateListing } from '../hooks/useListings'
 import { conditionLabels } from '../lib/listingLabels'
+import { buttonPrimary } from '../lib/uiClasses'
 import { listingSchema, type ListingFormInput, type ListingFormValues } from '../lib/validation/listingSchemas'
 import type { GearCondition } from '../types/listing'
 
@@ -38,12 +39,16 @@ export default function CreateListingPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-bold text-gray-900">List your gear</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900">List your gear</h1>
       <p className="mt-1 text-sm text-gray-500">
         This creates a draft. You&apos;ll add photos and publish it on the next step.
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-4">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="mt-6 space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+      >
         <FormField label="Category" htmlFor="categoryId" error={errors.categoryId?.message}>
           <select id="categoryId" className={formInputClasses} {...register('categoryId')}>
             <option value="">Select a category</option>
@@ -102,11 +107,7 @@ export default function CreateListingPage() {
 
         {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-        >
+        <button type="submit" disabled={isSubmitting} className={`w-full ${buttonPrimary}`}>
           {isSubmitting ? 'Creating…' : 'Create draft listing'}
         </button>
       </form>

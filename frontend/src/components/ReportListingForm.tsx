@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { FormField, formInputClasses } from './FormField'
 import { useCreateReport } from '../hooks/useModeration'
 import { reasonLabels } from '../lib/moderationLabels'
+import { buttonDanger, buttonSecondary } from '../lib/uiClasses'
 import { reportSchema, type ReportFormValues } from '../lib/validation/reportSchema'
 import type { ReportReason } from '../types/moderation'
 
@@ -33,7 +34,7 @@ export function ReportListingForm({ listingId, onDone }: { listingId: string; on
     <form
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      className="mt-3 space-y-3 rounded-md border border-gray-200 bg-gray-50 p-3"
+      className="mt-3 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4"
     >
       <FormField label="Reason" htmlFor="reason" error={errors.reason?.message}>
         <select id="reason" className={formInputClasses} {...register('reason')}>
@@ -52,18 +53,10 @@ export function ReportListingForm({ listingId, onDone }: { listingId: string; on
       {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={isSubmitting} className={buttonDanger}>
           {isSubmitting ? 'Submitting…' : 'Submit report'}
         </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
-        >
+        <button type="button" onClick={onDone} className={buttonSecondary}>
           Cancel
         </button>
       </div>

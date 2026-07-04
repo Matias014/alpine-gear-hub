@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormField, formInputClasses } from '../components/FormField'
 import { useAuth } from '../contexts/AuthContext'
+import { buttonPrimary } from '../lib/uiClasses'
 import { loginSchema, type LoginFormValues } from '../lib/validation/authSchemas'
 
 export default function LoginPage() {
@@ -55,11 +56,7 @@ export default function LoginPage() {
 
         {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-        >
+        <button type="submit" disabled={isSubmitting} className={`w-full ${buttonPrimary}`}>
           {isSubmitting ? 'Logging in…' : 'Log in'}
         </button>
       </form>

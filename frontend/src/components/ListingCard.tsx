@@ -6,7 +6,7 @@ export function ListingCard({ listing }: { listing: ListingSummaryResponse }) {
   return (
     <Link
       to={`/listings/${listing.id}`}
-      className="group block overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
+      className="group block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="aspect-square w-full bg-gray-100">
         {listing.primaryImageUrl ? (

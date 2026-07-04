@@ -4,6 +4,7 @@ import { Pagination } from '../components/Pagination'
 import { useListing } from '../hooks/useListings'
 import { useReports, useReviewReport } from '../hooks/useModeration'
 import { reasonLabels, reportStatusStyles } from '../lib/moderationLabels'
+import { buttonDanger, buttonSecondary } from '../lib/uiClasses'
 import type { ReportResponse, ReportStatus } from '../types/moderation'
 
 const STATUSES: ReportStatus[] = ['Pending', 'Reviewed', 'Dismissed']
@@ -20,7 +21,7 @@ export default function ModerationPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900">Moderation queue</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900">Moderation queue</h1>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <FilterButton active={status === undefined} onClick={() => selectStatus(undefined)}>
@@ -35,7 +36,11 @@ export default function ModerationPage() {
 
       {isLoading && <p className="mt-6 text-sm text-gray-500">Loading…</p>}
       {isError && <p className="mt-6 text-sm text-red-600">Couldn&apos;t load reports.</p>}
-      {data && data.items.length === 0 && <p className="mt-6 text-sm text-gray-500">No reports here.</p>}
+      {data && data.items.length === 0 && (
+        <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center">
+          <p className="text-sm text-gray-500">No reports here.</p>
+        </div>
+      )}
 
       <div className="mt-4 space-y-3">
         {data?.items.map((report) => (
@@ -69,8 +74,10 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-md border px-3 py-1.5 text-sm ${
-        active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+      className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+        active
+          ? 'border-emerald-600 bg-emerald-600 text-white'
+          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
       }`}
     >
       {children}
@@ -93,7 +100,7 @@ function ReportCard({ report }: { report: ReportResponse }) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div>
           {listing ? (
@@ -116,20 +123,10 @@ function ReportCard({ report }: { report: ReportResponse }) {
 
       {report.status === 'Pending' && (
         <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleReview('Remove')}
-            disabled={reviewReport.isPending}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-          >
+          <button type="button" onClick={() => handleReview('Remove')} disabled={reviewReport.isPending} className={buttonDanger}>
             Remove listing
           </button>
-          <button
-            type="button"
-            onClick={() => handleReview('Dismiss')}
-            disabled={reviewReport.isPending}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-          >
+          <button type="button" onClick={() => handleReview('Dismiss')} disabled={reviewReport.isPending} className={buttonSecondary}>
             Dismiss
           </button>
         </div>

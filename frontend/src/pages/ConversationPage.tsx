@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConversations, useMarkConversationAsRead, useMessages, useSendMessage } from '../hooks/useChat'
 import { useListing } from '../hooks/useListings'
+import { buttonPrimary } from '../lib/uiClasses'
 
 export default function ConversationPage() {
   const { id = '' } = useParams<{ id: string }>()
@@ -46,9 +47,9 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="mx-auto flex h-[70vh] max-w-2xl flex-col">
-      <div className="mb-3 flex items-center justify-between">
-        <Link to="/messages" className="text-sm text-emerald-700 hover:underline">
+    <div className="mx-auto flex h-[70vh] max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <Link to="/messages" className="text-sm font-medium text-emerald-700 hover:underline">
           &larr; Back to messages
         </Link>
         {listing && (
@@ -58,7 +59,7 @@ export default function ConversationPage() {
         )}
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-white p-4">
+      <div className="flex-1 space-y-2 overflow-y-auto bg-gray-50 p-4">
         {isLoading && <p className="text-sm text-gray-500">Loading…</p>}
 
         {messages?.map((message) => {
@@ -66,8 +67,8 @@ export default function ConversationPage() {
           return (
             <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                  isMine ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-900'
+                className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                  isMine ? 'bg-emerald-600 text-white' : 'border border-gray-200 bg-white text-gray-900'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{message.body}</p>
@@ -81,24 +82,22 @@ export default function ConversationPage() {
         <div ref={bottomRef} />
       </div>
 
-      {sendError && <p className="mt-2 text-sm text-red-600">{sendError}</p>}
+      <div className="border-t border-gray-200 p-3">
+        {sendError && <p className="mb-2 text-sm text-red-600">{sendError}</p>}
 
-      <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
-        <input
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Write a message…"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-        />
-        <button
-          type="submit"
-          disabled={sendMessage.isPending || !draft.trim()}
-          className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-        >
-          Send
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Write a message…"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm transition-colors focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+          />
+          <button type="submit" disabled={sendMessage.isPending || !draft.trim()} className={buttonPrimary}>
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

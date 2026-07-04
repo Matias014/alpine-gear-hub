@@ -11,15 +11,15 @@ export default function ConversationsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900">Messages</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900">Messages</h1>
 
       {conversations && conversations.length === 0 && (
-        <p className="mt-6 text-sm text-gray-500">
-          No conversations yet. Message a seller from a listing to start one.
-        </p>
+        <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center">
+          <p className="text-sm text-gray-500">No conversations yet. Message a seller from a listing to start one.</p>
+        </div>
       )}
 
-      <div className="mt-4 divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
+      <div className="mt-4 divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white shadow-sm">
         {conversations?.map((conversation) => (
           <ConversationListItem key={conversation.id} conversation={conversation} />
         ))}
@@ -35,8 +35,8 @@ function ConversationListItem({ conversation }: { conversation: ConversationSumm
   const { data: listing } = useListing(conversation.listingId)
 
   return (
-    <Link to={`/messages/${conversation.id}`} className="flex items-center gap-3 p-3 hover:bg-gray-50">
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-gray-100">
+    <Link to={`/messages/${conversation.id}`} className="flex items-center gap-3 p-4 transition-colors hover:bg-gray-50">
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
         {listing?.images[0] && <img src={listing.images[0].url} alt="" className="h-full w-full object-cover" />}
       </div>
 

@@ -2,8 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ListingCard } from '../components/ListingCard'
 import { Pagination } from '../components/Pagination'
+import { formInputClasses } from '../components/FormField'
 import { useCategories, useListings } from '../hooks/useListings'
 import { conditionLabels } from '../lib/listingLabels'
+import { buttonPrimary } from '../lib/uiClasses'
 import type { GearCondition } from '../types/listing'
 
 const CONDITIONS = Object.keys(conditionLabels) as GearCondition[]
@@ -42,18 +44,20 @@ export default function ListingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900">{sellerId ? 'My listings' : 'Browse gear'}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+        {sellerId ? 'My listings' : 'Browse gear'}
+      </h1>
 
-      <div className="mt-4 flex flex-wrap items-end gap-3">
+      <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
           <input
             type="search"
             placeholder="Search listings…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+            className={formInputClasses}
           />
-          <button type="submit" className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">
+          <button type="submit" className={buttonPrimary}>
             Search
           </button>
         </form>
@@ -61,7 +65,7 @@ export default function ListingsPage() {
         <select
           value={categoryId ?? ''}
           onChange={(e) => updateParam('categoryId', e.target.value || undefined)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          className={formInputClasses}
         >
           <option value="">All categories</option>
           {categories?.map((category) => (
@@ -74,7 +78,7 @@ export default function ListingsPage() {
         <select
           value={condition ?? ''}
           onChange={(e) => updateParam('condition', e.target.value || undefined)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+          className={formInputClasses}
         >
           <option value="">Any condition</option>
           {CONDITIONS.map((value) => (
@@ -89,7 +93,9 @@ export default function ListingsPage() {
       {isError && <p className="mt-8 text-sm text-red-600">Couldn&apos;t load listings. Try again shortly.</p>}
 
       {data && data.items.length === 0 && (
-        <p className="mt-8 text-sm text-gray-500">No listings match those filters.</p>
+        <div className="mt-8 rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center">
+          <p className="text-sm text-gray-500">No listings match those filters.</p>
+        </div>
       )}
 
       {data && data.items.length > 0 && (
