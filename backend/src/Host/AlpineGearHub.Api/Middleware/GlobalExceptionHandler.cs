@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Stripe;
 
 namespace AlpineGearHub.Api.Middleware;
 
@@ -20,6 +21,7 @@ namespace AlpineGearHub.Api.Middleware;
 ///   InvalidListingStatusTransitionException → 422 Unprocessable Entity
 ///   BadHttpRequestException (invalid JSON)  → 400 Bad Request
 ///   DomainException (other)                → 422 Unprocessable Entity
+///   StripeException                        → 502 Bad Gateway
 ///   Everything else                        → 500 Internal Server Error
 /// </summary>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
@@ -76,6 +78,14 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
                 StatusCodes.Status422UnprocessableEntity,
                 "Business rule violation",
                 exception.Message),
+
+            // The payment provider itself failed (bad/placeholder API key, card decline forwarded
+            // as an exception, transient Stripe outage) - not something the caller can fix by
+            // retrying with different input, so 502 (upstream failure) fits better than a plain 500.
+            StripeException => (
+                StatusCodes.Status502BadGateway,
+                "Payment provider error",
+                "The payment provider could not process this request. Please try again shortly."),
 
             _ => (
                 StatusCodes.Status500InternalServerError,
