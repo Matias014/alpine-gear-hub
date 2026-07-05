@@ -107,6 +107,16 @@ npm run dev
 
 The app opens at **http://localhost:5173**.
 
+### Seeding demo listings (optional)
+
+To populate the marketplace with 10 published listings (one per category, each with a photo) instead of starting from an empty database, run this once the backend is up:
+
+```bash
+./scripts/seed-demo-listings.sh
+```
+
+It registers a `demo-seller@alpinegearhub.local` account and uploads the images in `scripts/seed-images/`. Safe to re-run.
+
 ## Running tests
 
 **Backend** (integration tests, requires Docker):
