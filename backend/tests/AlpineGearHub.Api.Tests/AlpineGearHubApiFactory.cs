@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
 using Testcontainers.Redis;
 
@@ -19,6 +20,14 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         .WithImage("redis:7-alpine")
         .Build();
 
+    // Added so the real image-upload path (previously only ever exercised manually against a
+    // dev MinIO at localhost:9000) is actually covered by CI too - see ListingsTests.UploadImage_*.
+    private readonly MinioContainer _minio = new MinioBuilder()
+        .WithImage("minio/minio:latest")
+        .WithUsername("minioadmin")
+        .WithPassword("minioadmin")
+        .Build();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting(
@@ -31,11 +40,12 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         builder.UseSetting("Jwt:Issuer", "alpinegearhub-api");
         builder.UseSetting("Jwt:Audience", "alpinegearhub-client");
 
-        builder.UseSetting("Storage:Endpoint", "http://localhost:9000");
+        var minioEndpoint = _minio.GetConnectionString();
+        builder.UseSetting("Storage:Endpoint", minioEndpoint);
         builder.UseSetting("Storage:AccessKey", "minioadmin");
         builder.UseSetting("Storage:SecretKey", "minioadmin");
         builder.UseSetting("Storage:BucketName", "alpine-gear-hub");
-        builder.UseSetting("Storage:PublicBaseUrl", "http://localhost:9000");
+        builder.UseSetting("Storage:PublicBaseUrl", minioEndpoint);
 
         // Pinning these explicitly rather than relying on appsettings.Development.json loading -
         // WebhookSigner.cs below needs to know the exact secret to sign test payloads against.
@@ -44,11 +54,11 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
     }
 
     public async Task InitializeAsync() =>
-        await Task.WhenAll(_postgres.StartAsync(), _redis.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), _redis.StartAsync(), _minio.StartAsync());
 
     public new async Task DisposeAsync()
     {
-        await Task.WhenAll(_postgres.DisposeAsync().AsTask(), _redis.DisposeAsync().AsTask());
+        await Task.WhenAll(_postgres.DisposeAsync().AsTask(), _redis.DisposeAsync().AsTask(), _minio.DisposeAsync().AsTask());
         await base.DisposeAsync();
     }
 }

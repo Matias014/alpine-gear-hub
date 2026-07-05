@@ -187,4 +187,65 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    // A 1x1 transparent PNG, kept inline so this test doesn't depend on any file on disk - this
+    // path used to only ever be exercised manually against a dev MinIO, never by CI (the test
+    // factory hardcoded Storage:Endpoint to localhost:9000, which isn't reachable on CI runners).
+    private const string OnePixelPngBase64 =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+    [Fact]
+    public async Task UploadImage_StoresItInObjectStorageAndReturnsAPubliclyFetchableUrl()
+    {
+        var seller = await TestFlows.RegisterAsync(factory);
+        var listing = await TestFlows.CreateAndPublishListingAsync(seller);
+        var imageBytes = Convert.FromBase64String(OnePixelPngBase64);
+
+        var uploadResponse = await seller.PostFileAsync(
+            $"/api/listings/{listing.Id}/images", imageBytes, "pixel.png", "image/png");
+
+        uploadResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var image = await uploadResponse.Content.ReadFromJsonAsync<ListingImageResponse>();
+        image!.Url.Should().NotBeNullOrEmpty();
+
+        using var publicClient = new HttpClient();
+        var fetchResponse = await publicClient.GetAsync(image.Url);
+        fetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var getListingResponse = await seller.GetAsync($"/api/listings/{listing.Id}");
+        var fetchedListing = await getListingResponse.Content.ReadFromJsonAsync<ListingResponse>();
+        fetchedListing!.Images.Should().ContainSingle(i => i.Id == image.Id);
+    }
+
+    [Fact]
+    public async Task UploadImage_ByNonOwner_ReturnsForbidden()
+    {
+        var seller = await TestFlows.RegisterAsync(factory);
+        var listing = await TestFlows.CreateAndPublishListingAsync(seller);
+        var stranger = await TestFlows.RegisterAsync(factory);
+        var imageBytes = Convert.FromBase64String(OnePixelPngBase64);
+
+        var response = await stranger.PostFileAsync(
+            $"/api/listings/{listing.Id}/images", imageBytes, "pixel.png", "image/png");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task DeleteImage_ByOwner_RemovesItFromTheListing()
+    {
+        var seller = await TestFlows.RegisterAsync(factory);
+        var listing = await TestFlows.CreateAndPublishListingAsync(seller);
+        var imageBytes = Convert.FromBase64String(OnePixelPngBase64);
+        var uploadResponse = await seller.PostFileAsync(
+            $"/api/listings/{listing.Id}/images", imageBytes, "pixel.png", "image/png");
+        var image = (await uploadResponse.Content.ReadFromJsonAsync<ListingImageResponse>())!;
+
+        var deleteResponse = await seller.DeleteAsync($"/api/listings/{listing.Id}/images/{image.Id}");
+
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var getListingResponse = await seller.GetAsync($"/api/listings/{listing.Id}");
+        var fetchedListing = await getListingResponse.Content.ReadFromJsonAsync<ListingResponse>();
+        fetchedListing!.Images.Should().BeEmpty();
+    }
 }

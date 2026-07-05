@@ -15,6 +15,15 @@ public sealed class ApiClient(HttpClient http)
     public Task<HttpResponseMessage> PostAsync<T>(string url, T body) =>
         http.PostAsJsonAsync(url, body);
 
+    public Task<HttpResponseMessage> PostFileAsync(string url, byte[] fileBytes, string fileName, string contentType)
+    {
+        var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(fileBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        content.Add(fileContent, "file", fileName);
+        return http.PostAsync(url, content);
+    }
+
     public Task<HttpResponseMessage> PutAsync<T>(string url, T body) =>
         http.PutAsJsonAsync(url, body);
 
