@@ -234,6 +234,21 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
     }
 
     [Fact]
+    public async Task UploadImage_WithPathTraversalFilename_DoesNotAffectTheStorageKey()
+    {
+        var seller = await TestFlows.RegisterAsync(factory);
+        var listing = await TestFlows.CreateAndPublishListingAsync(seller);
+        var imageBytes = Convert.FromBase64String(OnePixelPngBase64);
+
+        var response = await seller.PostFileAsync(
+            $"/api/listings/{listing.Id}/images", imageBytes, "photo.png/../../../etc/cron.d/backdoor", "image/png");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var image = await response.Content.ReadFromJsonAsync<ListingImageResponse>();
+        image!.Url.Should().NotContain("..").And.EndWith(".png");
+    }
+
+    [Fact]
     public async Task UploadImage_ByNonOwner_ReturnsForbidden()
     {
         var seller = await TestFlows.RegisterAsync(factory);

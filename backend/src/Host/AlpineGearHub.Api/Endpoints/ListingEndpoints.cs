@@ -101,7 +101,7 @@ public static class ListingEndpoints
             var requesterId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             await using var stream = file.OpenReadStream();
             var result = await sender.Send(
-                new UploadListingImageCommand(id, requesterId, stream, file.FileName), ct);
+                new UploadListingImageCommand(id, requesterId, stream), ct);
             return Results.Created($"/api/listings/{id}", result);
         })
         .RequireAuthorization()

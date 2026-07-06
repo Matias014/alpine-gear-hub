@@ -6,5 +6,4 @@ namespace AlpineGearHub.Listings.Application.Commands.UploadListingImage;
 public record UploadListingImageCommand(
     Guid ListingId,
     Guid RequesterId,
-    Stream Content,
-    string FileName) : IRequest<ListingImageResponse>;
+    Stream Content) : IRequest<ListingImageResponse>;

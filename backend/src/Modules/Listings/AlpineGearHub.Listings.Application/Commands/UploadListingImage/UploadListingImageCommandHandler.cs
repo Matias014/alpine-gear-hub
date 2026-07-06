@@ -11,9 +11,10 @@ internal sealed class UploadListingImageCommandHandler(
 {
     public async Task<ListingImageResponse> Handle(UploadListingImageCommand request, CancellationToken cancellationToken)
     {
-        // The declared Content-Type header is client-supplied and therefore untrusted - only the
-        // actual file signature decides what gets stored and served back as.
-        var detectedContentType = await ImageSignature.DetectContentTypeAsync(request.Content, cancellationToken)
+        // The declared Content-Type header (and the filename/extension) are client-supplied and
+        // therefore untrusted - only the actual file signature decides both what this is stored
+        // and served as, and what extension the storage key gets.
+        var detected = await ImageSignature.DetectAsync(request.Content, cancellationToken)
             ?? throw new InvalidOperationException("Only JPEG, PNG and WebP images are allowed.");
 
         var listing = await listingRepository.GetByIdAsync(request.ListingId, cancellationToken)
@@ -22,10 +23,9 @@ internal sealed class UploadListingImageCommandHandler(
         if (listing.SellerId != request.RequesterId)
             throw new UnauthorizedAccessException("Only the seller can upload images to this listing.");
 
-        var extension = Path.GetExtension(request.FileName);
-        var storageKey = $"listings/{request.ListingId}/{Guid.NewGuid()}{extension}";
+        var storageKey = $"listings/{request.ListingId}/{Guid.NewGuid()}{detected.Extension}";
 
-        await fileStorage.UploadAsync(request.Content, storageKey, detectedContentType, cancellationToken);
+        await fileStorage.UploadAsync(request.Content, storageKey, detected.ContentType, cancellationToken);
 
         var image = listing.AddImage(storageKey);
         await listingRepository.SaveChangesAsync(cancellationToken);
