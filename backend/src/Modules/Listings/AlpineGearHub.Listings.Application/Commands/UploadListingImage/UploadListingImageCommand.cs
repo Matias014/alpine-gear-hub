@@ -7,5 +7,4 @@ public record UploadListingImageCommand(
     Guid ListingId,
     Guid RequesterId,
     Stream Content,
-    string FileName,
-    string ContentType) : IRequest<ListingImageResponse>;
+    string FileName) : IRequest<ListingImageResponse>;

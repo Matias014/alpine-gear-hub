@@ -218,6 +218,22 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
     }
 
     [Fact]
+    public async Task UploadImage_WithSpoofedContentType_IsRejectedBasedOnActualFileBytes()
+    {
+        var seller = await TestFlows.RegisterAsync(factory);
+        var listing = await TestFlows.CreateAndPublishListingAsync(seller);
+        var notActuallyAnImage = "<script>alert(1)</script>"u8.ToArray();
+
+        var response = await seller.PostFileAsync(
+            $"/api/listings/{listing.Id}/images", notActuallyAnImage, "fake.png", "image/png");
+
+        // Same InvalidOperationException the "listing not found" branch throws in this handler
+        // maps to 404 too (see GlobalExceptionHandler) - not the ideal status code for "invalid
+        // file", but pre-existing behavior this fix doesn't change.
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task UploadImage_ByNonOwner_ReturnsForbidden()
     {
         var seller = await TestFlows.RegisterAsync(factory);

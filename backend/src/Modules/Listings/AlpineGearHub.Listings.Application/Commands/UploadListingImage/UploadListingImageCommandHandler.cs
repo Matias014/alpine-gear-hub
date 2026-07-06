@@ -9,12 +9,12 @@ internal sealed class UploadListingImageCommandHandler(
     IListingRepository listingRepository,
     IFileStorage fileStorage) : IRequestHandler<UploadListingImageCommand, ListingImageResponse>
 {
-    private static readonly string[] AllowedContentTypes = ["image/jpeg", "image/png", "image/webp"];
-
     public async Task<ListingImageResponse> Handle(UploadListingImageCommand request, CancellationToken cancellationToken)
     {
-        if (!AllowedContentTypes.Contains(request.ContentType))
-            throw new InvalidOperationException("Only JPEG, PNG and WebP images are allowed.");
+        // The declared Content-Type header is client-supplied and therefore untrusted - only the
+        // actual file signature decides what gets stored and served back as.
+        var detectedContentType = await ImageSignature.DetectContentTypeAsync(request.Content, cancellationToken)
+            ?? throw new InvalidOperationException("Only JPEG, PNG and WebP images are allowed.");
 
         var listing = await listingRepository.GetByIdAsync(request.ListingId, cancellationToken)
             ?? throw new InvalidOperationException($"Listing '{request.ListingId}' not found.");
@@ -25,7 +25,7 @@ internal sealed class UploadListingImageCommandHandler(
         var extension = Path.GetExtension(request.FileName);
         var storageKey = $"listings/{request.ListingId}/{Guid.NewGuid()}{extension}";
 
-        await fileStorage.UploadAsync(request.Content, storageKey, request.ContentType, cancellationToken);
+        await fileStorage.UploadAsync(request.Content, storageKey, detectedContentType, cancellationToken);
 
         var image = listing.AddImage(storageKey);
         await listingRepository.SaveChangesAsync(cancellationToken);
