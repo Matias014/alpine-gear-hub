@@ -15,6 +15,10 @@ namespace AlpineGearHub.Api.Endpoints;
 
 public static class ListingEndpoints
 {
+    // Plenty for a phone photo of gear; without an explicit cap the only limit is Kestrel's
+    // default ~30MB, which makes repeated near-30MB uploads a cheap storage/bandwidth abuse vector.
+    private const long MaxImageUploadBytes = 8 * 1024 * 1024;
+
     public static RouteGroupBuilder MapListingEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/", async (
@@ -106,6 +110,7 @@ public static class ListingEndpoints
         })
         .RequireAuthorization()
         .DisableAntiforgery()
+        .WithMetadata(new RequestSizeLimitAttribute(MaxImageUploadBytes))
         .WithSummary("Upload an image to a listing");
 
         group.MapDelete("/{id:guid}/images/{imageId:guid}", async (

@@ -233,6 +233,14 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // No automated test for the 8MB RequestSizeLimit on the upload endpoint (see
+    // ListingEndpoints.MaxImageUploadBytes): Microsoft.AspNetCore.TestHost.TestServer, which
+    // WebApplicationFactory uses here, bypasses Kestrel's real transport layer and never enforces
+    // IHttpMaxRequestBodySizeFeature - an oversized upload against this in-memory test host still
+    // returns 201. Verified manually instead: a 9MB upload against the real `dotnet run` server
+    // returns 413 before the request reaches the handler, and the listing's image list is
+    // unaffected; a same-size-limit upload still succeeds normally.
+
     [Fact]
     public async Task UploadImage_WithPathTraversalFilename_DoesNotAffectTheStorageKey()
     {
