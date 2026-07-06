@@ -167,7 +167,12 @@ export function Layout() {
         )}
       </header>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8">
+      {/* w-full is load-bearing here: main is a flex item of the flex-col wrapper above, and
+          it uses mx-auto itself - without an explicit width, main hits the same auto-margins-
+          override-stretch quirk (shrinks to content width instead of filling to max-w-5xl).
+          Deliberately NOT flex/flex-col on main itself: that broke every child centering via its
+          own mx-auto (ConversationPage, Create/EditListingPage) the same way, one level down. */}
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         <Outlet />
       </main>
     </div>

@@ -10,7 +10,10 @@ export default function ConversationsPage() {
   if (isError) return <p className="text-sm text-red-600">Couldn&apos;t load your conversations.</p>
 
   return (
-    <div className="flex flex-1 flex-col">
+    // h-full, not flex-1 - main is a plain block (flex-1 would need main itself to be
+    // display:flex, which breaks mx-auto centering elsewhere; see Layout.tsx). main still has a
+    // definite height via its own flex-1, so h-full here fills it correctly.
+    <div className="flex h-full flex-col">
       <h1 className="text-2xl font-bold tracking-tight text-gray-900">Messages</h1>
 
       {conversations && conversations.length === 0 ? (
