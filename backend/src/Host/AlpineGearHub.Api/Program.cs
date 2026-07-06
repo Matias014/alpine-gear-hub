@@ -167,11 +167,17 @@ app.Services.EnsureStorageBucketExistsAsync(app.Configuration).GetAwaiter().GetR
 using (var scope = app.Services.CreateScope())
 {
     var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    if (!identityDb.Users.Any(u => u.Role == UserRole.Admin))
+
+    // Dev/test-only: a hardcoded admin account is a real backdoor once the source is public, so
+    // this never runs outside Development. Any real deployment needs its own admin bootstrap
+    // (e.g. a one-off script or direct DB insert) rather than a well-known default login.
+    if (app.Environment.IsDevelopment() && !identityDb.Users.Any(u => u.Role == UserRole.Admin))
     {
+        var adminEmail = app.Configuration["Seed:AdminEmail"] ?? "admin@alpinegearhub.local";
+        var adminPassword = app.Configuration["Seed:AdminPassword"] ?? "Admin1234!";
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
-        var passwordHash = hasher.HashPassword(null!, "Admin1234!");
-        var admin = User.Create("admin@alpinegearhub.local", "System Admin", passwordHash, UserRole.Admin);
+        var passwordHash = hasher.HashPassword(null!, adminPassword);
+        var admin = User.Create(adminEmail, "System Admin", passwordHash, UserRole.Admin);
         identityDb.Users.Add(admin);
         identityDb.SaveChanges();
     }

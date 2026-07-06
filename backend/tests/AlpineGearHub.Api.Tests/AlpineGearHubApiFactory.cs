@@ -30,6 +30,12 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Explicit rather than relying on WebApplicationFactory's default - the admin-account seed
+        // in Program.cs is now gated to IsDevelopment() (it used to run unconditionally, which was
+        // a real backdoor once the source went public), and ListingsTests.Remove_ByAdmin_Succeeds
+        // depends on that seeded account existing.
+        builder.UseEnvironment("Development");
+
         builder.UseSetting(
             "ConnectionStrings:DefaultConnection",
             _postgres.GetConnectionString());
@@ -39,6 +45,9 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         builder.UseSetting("Jwt:Secret", "test-secret-key-that-is-long-enough-32chars!");
         builder.UseSetting("Jwt:Issuer", "alpinegearhub-api");
         builder.UseSetting("Jwt:Audience", "alpinegearhub-client");
+
+        builder.UseSetting("Seed:AdminEmail", "admin@alpinegearhub.local");
+        builder.UseSetting("Seed:AdminPassword", "Admin1234!");
 
         var minioEndpoint = _minio.GetConnectionString();
         builder.UseSetting("Storage:Endpoint", minioEndpoint);

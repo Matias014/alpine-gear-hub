@@ -59,7 +59,7 @@ docker compose up --build
 | MinIO     | http://localhost:9001          | user: `minioadmin` / pass: `minioadmin` |
 | pgAdmin   | http://localhost:5050          | email: `admin@alpinegearhub.local` / pass: `admin` |
 
-Migrations and the seed admin account are applied automatically on first start.
+Migrations are applied automatically on first start. The seed admin account is **development-only** (`ASPNETCORE_ENVIRONMENT=Development`, which is what both `docker compose up` and `dotnet run` use here) — a real deployment needs its own admin bootstrap instead of a well-known default login.
 
 **Demo accounts**
 
