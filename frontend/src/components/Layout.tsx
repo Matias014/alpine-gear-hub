@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useUnreadMessagesCount } from '../hooks/useChat'
 import { useChatNotifications } from '../hooks/useChatNotifications'
@@ -7,6 +7,15 @@ export function Layout() {
   const { user, isAuthenticated, logout } = useAuth()
   const unreadCount = useUnreadMessagesCount()
   useChatNotifications()
+  const navigate = useNavigate()
+
+  // Protected pages already redirect on logout via RequireAuth/RequireModerator, but public
+  // pages (home, browse, listing detail) don't - without this, logging out while on e.g.
+  // "My listings" just silently updates the nav and leaves you on a now-meaningless filtered view.
+  function handleLogout() {
+    logout()
+    navigate('/')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -44,7 +53,7 @@ export function Layout() {
                 )}
                 <button
                   type="button"
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="text-gray-600 transition-colors hover:text-gray-900"
                 >
                   Log out
