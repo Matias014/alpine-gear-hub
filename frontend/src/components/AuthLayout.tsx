@@ -8,9 +8,11 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   return (
-    // No min-h-screen here on purpose - this renders inside Layout's <main>, below the sticky
-    // header, so min-h-screen was fighting the parent for height and throwing off the centering.
-    <div className="flex items-center justify-center py-10 sm:py-16">
+    // flex-1 (not min-h-screen) since this renders inside Layout's <main>, below the sticky
+    // header - min-h-screen would fight the parent for height. main is itself flex/flex-col, so
+    // flex-1 here grows to fill the actual remaining viewport height, letting the card center
+    // properly instead of just centering within its own content height and leaving a void below.
+    <div className="flex flex-1 items-center justify-center py-10 sm:py-16">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
