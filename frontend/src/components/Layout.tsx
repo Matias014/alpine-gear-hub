@@ -1,4 +1,5 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useUnreadMessagesCount } from '../hooks/useChat'
 import { useChatNotifications } from '../hooks/useChatNotifications'
@@ -8,6 +9,15 @@ export function Layout() {
   const unreadCount = useUnreadMessagesCount()
   useChatNotifications()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  // Logged-in nav has 6 items (Browse/My listings/Messages/Moderation/Log out/Sell gear) - too
+  // many to fit a phone screen inline, so below md it collapses into this toggled menu instead.
+  // Closing on every route change means a tapped link doesn't leave the menu stuck open behind it.
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [location.pathname])
 
   // Protected pages already redirect on logout via RequireAuth/RequireModerator, but public
   // pages (home, browse, listing detail) don't - without this, logging out while on e.g.
@@ -25,7 +35,7 @@ export function Layout() {
             Alpine<span className="text-emerald-600">Gear</span>Hub
           </Link>
 
-          <nav className="flex items-center gap-5 text-sm">
+          <nav className="hidden items-center gap-5 text-sm md:flex">
             <Link to="/listings" className="text-gray-600 transition-colors hover:text-gray-900">
               Browse
             </Link>
@@ -79,7 +89,82 @@ export function Layout() {
               </>
             )}
           </nav>
+
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 md:hidden"
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {isMenuOpen && (
+          <nav className="flex flex-col gap-1 border-t border-gray-200 px-4 py-3 text-sm md:hidden">
+            <Link to="/listings" className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-50">
+              Browse
+            </Link>
+
+            {isAuthenticated && user ? (
+              <>
+                <Link to={`/listings?sellerId=${user.id}`} className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-50">
+                  My listings
+                </Link>
+                <Link
+                  to="/messages"
+                  className="flex items-center justify-between rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-50"
+                >
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+                {(user.role === 'Moderator' || user.role === 'Admin') && (
+                  <Link to="/moderation" className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-50">
+                    Moderation
+                  </Link>
+                )}
+                <Link
+                  to="/listings/new"
+                  className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-center font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
+                >
+                  Sell gear
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-lg px-3 py-2 text-left text-gray-700 hover:bg-gray-50"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-50">
+                  Log in
+                </Link>
+                <Link
+                  to="/register"
+                  className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-center font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
+                >
+                  Register
+                </Link>
+              </>
+            )}
+          </nav>
+        )}
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8">
