@@ -61,12 +61,18 @@ docker compose up --build
 
 Migrations and the seed admin account are applied automatically on first start.
 
-**Default admin credentials**
+**Demo accounts**
 
-| Field    | Value |
-|----------|-------|
-| Email    | `admin@alpinegearhub.local` |
-| Password | `Admin1234!` |
+Run `./scripts/seed-demo-listings.sh` once the backend is up to populate the marketplace and create these accounts (see [Seeding demo listings](#seeding-demo-listings-optional) below):
+
+| Role | Name | Email | Password |
+|------|------|-------|----------|
+| Admin | System Admin | `admin@alpinegearhub.local` | `Admin1234!` |
+| Seller | Alex Sterling | `alex.sterling@alpinegearhub.local` | `Demo1234!` |
+| Seller | Mia Larsen | `mia.larsen@alpinegearhub.local` | `Demo1234!` |
+| Seller | Sam Rivera | `sam.rivera@alpinegearhub.local` | `Demo1234!` |
+
+The admin account is seeded automatically; the three seller accounts only exist after running the seed script. Since each owns a different set of listings, you can log in as one seller and message/report another seller's listing to see the buyer-side flows too.
 
 To override secrets (JWT key, Stripe test key, etc.):
 
@@ -115,7 +121,7 @@ To populate the marketplace with 10 published listings (one per category, each w
 ./scripts/seed-demo-listings.sh
 ```
 
-It registers a `demo-seller@alpinegearhub.local` account and uploads the images in `scripts/seed-images/`. Safe to re-run.
+It registers the 3 seller accounts listed above (Alex Sterling, Mia Larsen, Sam Rivera — password `Demo1234!` for all), splits the 10 listings across them, and uploads the images in `scripts/seed-images/`. Safe to re-run — it registers the same accounts again (a no-op) but creates a fresh batch of listings each time, so re-running it repeatedly will leave you with duplicates.
 
 ## Running tests
 
