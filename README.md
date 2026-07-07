@@ -12,11 +12,18 @@ A niche C2C marketplace for climbing and mountaineering gear — safety-aware li
 | Backend  | .NET 10, ASP.NET Core Web API, EF Core 10, MediatR, FluentValidation, SignalR |
 | Database | PostgreSQL 18 |
 | Cache    | Redis |
-| Storage  | MinIO (S3-compatible, local) / AWS S3 (production) |
+| Storage  | MinIO (S3-compatible, local) / AWS S3 (production)¹ |
 | Payments | Stripe (test mode) |
 | Auth     | JWT Bearer tokens + refresh tokens, ASP.NET Core Identity (password hashing) |
 | Tests    | xUnit + Testcontainers (backend), Vitest + Testing Library (frontend) |
 | CI       | GitHub Actions |
+
+¹ `MinioFileStorage` talks to the real AWS S3 SDK (`IAmazonS3`), just pointed at a local MinIO
+endpoint — so swapping in AWS credentials and dropping the endpoint override is enough for the
+upload/download path to work against real S3 as-is. The one thing that's dev-only and shouldn't
+run against production is `EnsureStorageBucketExistsAsync`, which auto-creates the bucket with a
+public-read policy on startup; a production bucket should be provisioned separately (IaC) with a
+tighter access policy (e.g. CloudFront + presigned URLs) instead of world-readable objects.
 
 ## Architecture
 
