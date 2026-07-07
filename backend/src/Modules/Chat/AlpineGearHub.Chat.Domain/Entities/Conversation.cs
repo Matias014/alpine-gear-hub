@@ -1,4 +1,3 @@
-using AlpineGearHub.Chat.Domain.Events;
 using AlpineGearHub.Chat.Domain.Exceptions;
 using AlpineGearHub.SharedKernel;
 
@@ -40,9 +39,6 @@ public class Conversation : AggregateRoot
         var message = Message.Create(Id, senderId, body);
         _messages.Add(message);
         LastMessageAt = message.SentAt;
-
-        var recipientId = senderId == BuyerId ? SellerId : BuyerId;
-        RaiseDomainEvent(new MessageSentEvent(Id, message.Id, senderId, recipientId, body, message.SentAt));
 
         return message;
     }

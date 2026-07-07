@@ -1,5 +1,4 @@
 using AlpineGearHub.Listings.Domain.Enums;
-using AlpineGearHub.Listings.Domain.Events;
 using AlpineGearHub.Listings.Domain.Exceptions;
 using AlpineGearHub.Listings.Domain.ValueObjects;
 using AlpineGearHub.SharedKernel;
@@ -77,7 +76,6 @@ public class Listing : AggregateRoot
         Status = ListingStatus.Active;
         ExpiresAt = DateTime.UtcNow.AddDays(ListingLifetimeDays);
         UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new ListingPublishedEvent(Id, SellerId));
     }
 
     public void MarkAsReserved()
@@ -97,7 +95,6 @@ public class Listing : AggregateRoot
         Status = ListingStatus.Sold;
         ExpiresAt = null;
         UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new ListingSoldEvent(Id, SellerId));
     }
 
     public void Renew()
@@ -118,7 +115,6 @@ public class Listing : AggregateRoot
         Status = ListingStatus.Removed;
         ExpiresAt = null;
         UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new ListingRemovedEvent(Id, SellerId));
     }
 
     public void SetPromoted(bool isPromoted)

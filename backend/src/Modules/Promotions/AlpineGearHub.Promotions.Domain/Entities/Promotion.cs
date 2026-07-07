@@ -1,5 +1,4 @@
 using AlpineGearHub.Promotions.Domain.Enums;
-using AlpineGearHub.Promotions.Domain.Events;
 using AlpineGearHub.Promotions.Domain.Exceptions;
 using AlpineGearHub.Promotions.Domain.ValueObjects;
 using AlpineGearHub.SharedKernel;
@@ -40,7 +39,6 @@ public class Promotion : AggregateRoot
     {
         EnsurePending();
         PaymentStatus = PaymentStatus.Completed;
-        RaiseDomainEvent(new PromotionActivatedEvent(Id, ListingId));
     }
 
     public void MarkPaymentFailed()
