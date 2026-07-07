@@ -1,9 +1,25 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConversations, useMarkConversationAsRead, useMessages, useSendMessage } from '../hooks/useChat'
 import { useListing } from '../hooks/useListings'
 import { buttonPrimary } from '../lib/uiClasses'
+
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
+// Bubbles only ever show a time (see below) - without this, a thread that spans multiple days
+// looks identical to one from a single afternoon, since nothing on screen names the day at all.
+function formatDateDivider(date: Date): string {
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+
+  if (isSameDay(date, now)) return 'Today'
+  if (isSameDay(date, yesterday)) return 'Yesterday'
+  return date.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })
+}
 
 export default function ConversationPage() {
   const { id = '' } = useParams<{ id: string }>()
@@ -62,21 +78,34 @@ export default function ConversationPage() {
       <div className="flex-1 space-y-2 overflow-y-auto bg-gray-50 p-4">
         {isLoading && <p className="text-sm text-gray-500">Loading…</p>}
 
-        {messages?.map((message) => {
+        {messages?.map((message, index) => {
           const isMine = message.senderId === user?.id
+          const sentAt = new Date(message.sentAt)
+          const previousSentAt = index > 0 ? new Date(messages[index - 1].sentAt) : null
+          const showDateDivider = !previousSentAt || !isSameDay(sentAt, previousSentAt)
+
           return (
-            <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
-                  isMine ? 'bg-emerald-600 text-white' : 'border border-gray-200 bg-white text-gray-900'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{message.body}</p>
-                <p className={`mt-1 text-[10px] ${isMine ? 'text-emerald-100' : 'text-gray-500'}`}>
-                  {new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+            <Fragment key={message.id}>
+              {showDateDivider && (
+                <div className="flex justify-center py-1">
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-[11px] font-medium text-gray-600">
+                    {formatDateDivider(sentAt)}
+                  </span>
+                </div>
+              )}
+              <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                    isMine ? 'bg-emerald-600 text-white' : 'border border-gray-200 bg-white text-gray-900'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.body}</p>
+                  <p className={`mt-1 text-[10px] ${isMine ? 'text-emerald-100' : 'text-gray-500'}`}>
+                    {sentAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
-            </div>
+            </Fragment>
           )
         })}
         <div ref={bottomRef} />
