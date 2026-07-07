@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useUnreadMessagesCount } from '../hooks/useChat'
@@ -15,9 +15,13 @@ export function Layout() {
   // Logged-in nav has 6 items (Browse/My listings/Messages/Moderation/Log out/Sell gear) - too
   // many to fit a phone screen inline, so below md it collapses into this toggled menu instead.
   // Closing on every route change means a tapped link doesn't leave the menu stuck open behind it.
-  useEffect(() => {
+  // Adjusted during render (not an effect) so the closed menu shows up in the same paint as the
+  // new page instead of flashing open for one frame first.
+  const [lastPathname, setLastPathname] = useState(location.pathname)
+  if (location.pathname !== lastPathname) {
+    setLastPathname(location.pathname)
     setIsMenuOpen(false)
-  }, [location.pathname])
+  }
 
   // Protected pages already redirect on logout via RequireAuth/RequireModerator, but public
   // pages (home, browse, listing detail) don't - without this, logging out while on e.g.

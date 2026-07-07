@@ -29,14 +29,16 @@ function toUser(auth: AuthResponse): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Lazy initializer instead of hydrating in an effect - tokenStorage.get() is a pure
+  // synchronous read, so there's no need for an extra render pass (and an isLoading flag)
+  // just to catch up to a value we could compute on the first render directly.
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const stored = tokenStorage.get()
+    return stored ? toUser(stored) : null
+  })
+  const isLoading = false
 
   useEffect(() => {
-    const stored = tokenStorage.get()
-    if (stored) setUser(toUser(stored))
-    setIsLoading(false)
-
     setOnAuthExpired(() => setUser(null))
   }, [])
 
