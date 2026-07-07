@@ -16,7 +16,7 @@ A niche C2C marketplace for climbing and mountaineering gear — safety-aware li
 | Payments | Stripe (test mode) |
 | Auth     | JWT Bearer tokens + refresh tokens, ASP.NET Core Identity (password hashing) |
 | Tests    | xUnit + Testcontainers (backend), Vitest + Testing Library (frontend) |
-| CI       | GitHub Actions |
+| CI       | GitHub Actions (tests on every push/PR; on merge to `main`, builds & pushes backend/frontend images to GHCR) |
 
 ¹ `MinioFileStorage` talks to the real AWS S3 SDK (`IAmazonS3`), just pointed at a local MinIO
 endpoint — so swapping in AWS credentials and dropping the endpoint override is enough for the

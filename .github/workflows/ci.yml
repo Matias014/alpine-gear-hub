@@ -58,3 +58,45 @@ jobs:
       - name: Test
         run: npm test
         working-directory: frontend
+
+  # ── Docker images ────────────────────────────────────────────────────────────
+  docker-build:
+    name: Build & push Docker images
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase repository name
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.name }}/backend:latest
+            ghcr.io/${{ steps.repo.outputs.name }}/backend:${{ github.sha }}
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.name }}/frontend:latest
+            ghcr.io/${{ steps.repo.outputs.name }}/frontend:${{ github.sha }}
