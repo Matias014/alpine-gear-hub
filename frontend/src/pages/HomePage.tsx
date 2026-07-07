@@ -24,7 +24,7 @@ export default function HomePage() {
               Browse all &rarr;
             </Link>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 items-start gap-4 sm:grid-cols-3 md:grid-cols-4">
             {recentListings.items.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}

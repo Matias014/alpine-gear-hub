@@ -107,7 +107,10 @@ export default function ListingsPage() {
 
       {data && data.items.length > 0 && (
         <>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {/* items-start - without it, grid's default stretch makes every card in a row match
+              the tallest one (e.g. a 2-line title), leaving dead space below shorter cards'
+              content instead of each card just sizing to its own height. */}
+          <div className="mt-6 grid grid-cols-2 items-start gap-4 sm:grid-cols-3 md:grid-cols-4">
             {data.items.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
