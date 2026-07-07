@@ -168,12 +168,16 @@ export default function EditListingPage() {
           {listing.status !== 'Sold' && listing.status !== 'Removed' && (
             <ActionButton
               danger
-              onClick={() =>
+              onClick={() => {
+                // This is the one irreversible-feeling action on this page, sitting right next
+                // to reversible status buttons - a native confirm is enough friction to catch a
+                // misclick without needing a whole modal component just for this one case.
+                if (!window.confirm(`Remove "${listing.title}"? This can't be undone.`)) return
                 runAction(async () => {
                   await changeStatus.mutateAsync('Remove')
                   navigate('/listings')
                 })
-              }
+              }}
             >
               Remove listing
             </ActionButton>
