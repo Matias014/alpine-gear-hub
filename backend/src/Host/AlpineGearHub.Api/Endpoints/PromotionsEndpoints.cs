@@ -1,11 +1,14 @@
 using System.Security.Claims;
+using AlpineGearHub.Api.Infrastructure;
 using AlpineGearHub.Listings.Application.Commands.SetListingPromoted;
 using AlpineGearHub.Listings.Application.Queries.GetListingById;
+using AlpineGearHub.Listings.Infrastructure.Data;
 using AlpineGearHub.Promotions.Application.Commands.CreatePromotion;
 using AlpineGearHub.Promotions.Application.Commands.ProcessPaymentWebhook;
 using AlpineGearHub.Promotions.Application.Queries.GetPromotionById;
 using AlpineGearHub.Promotions.Application.Queries.GetPromotionsByListing;
 using AlpineGearHub.Promotions.Domain.Enums;
+using AlpineGearHub.Promotions.Infrastructure.Data;
 using MediatR;
 
 namespace AlpineGearHub.Api.Endpoints;
@@ -71,16 +74,27 @@ public static class PromotionsEndpoints
         .RequireAuthorization()
         .WithSummary("Get promotion history for a listing");
 
-        group.MapPost("/webhook/stripe", async (HttpRequest request, ISender sender, CancellationToken ct) =>
+        group.MapPost("/webhook/stripe", async (
+            HttpRequest request,
+            ISender sender,
+            PromotionsDbContext promotionsDb,
+            ListingsDbContext listingsDb,
+            CancellationToken ct) =>
         {
             using var reader = new StreamReader(request.Body);
             var payload = await reader.ReadToEndAsync(ct);
             var signature = request.Headers["Stripe-Signature"].ToString();
 
-            var result = await sender.Send(new ProcessPaymentWebhookCommand(payload, signature), ct);
+            // Confirming the payment and flipping IsPromoted share one transaction so a crash in
+            // between can't leave a promotion marked "paid" while the listing never gets boosted.
+            PaymentWebhookResult? result = null;
+            await CrossModuleTransaction.RunAsync(ct, async () =>
+            {
+                result = await sender.Send(new ProcessPaymentWebhookCommand(payload, signature), ct);
 
-            if (result.ListingShouldBePromoted && result.ListingId is { } listingId)
-                await sender.Send(new SetListingPromotedCommand(listingId, true), ct);
+                if (result.ListingShouldBePromoted && result.ListingId is { } listingId)
+                    await sender.Send(new SetListingPromotedCommand(listingId, true), ct);
+            }, promotionsDb, listingsDb);
 
             return Results.Ok();
         })

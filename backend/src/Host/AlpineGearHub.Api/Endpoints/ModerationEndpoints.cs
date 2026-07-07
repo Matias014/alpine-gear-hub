@@ -1,11 +1,15 @@
 using System.Security.Claims;
+using AlpineGearHub.Api.Infrastructure;
 using AlpineGearHub.Listings.Application.Commands.ChangeListingStatus;
 using AlpineGearHub.Listings.Application.Queries.GetListingById;
+using AlpineGearHub.Listings.Infrastructure.Data;
 using AlpineGearHub.Moderation.Application.Commands.CreateReport;
 using AlpineGearHub.Moderation.Application.Commands.ReviewReport;
+using AlpineGearHub.Moderation.Application.DTOs;
 using AlpineGearHub.Moderation.Application.Queries.GetReportById;
 using AlpineGearHub.Moderation.Application.Queries.GetReports;
 using AlpineGearHub.Moderation.Domain.Enums;
+using AlpineGearHub.Moderation.Infrastructure.Data;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -57,19 +61,33 @@ public static class ModerationEndpoints
 
         group.MapPost("/reports/{id:guid}/review", async (
             ISender sender,
+            ModerationDbContext moderationDb,
+            ListingsDbContext listingsDb,
             Guid id,
             ReviewReportRequest body,
             ClaimsPrincipal user,
             CancellationToken ct) =>
         {
             var reviewerId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var report = await sender.Send(new ReviewReportCommand(id, reviewerId, body.Resolution), ct);
+            ReportResponse? report = null;
 
             // "Remove" both resolves the report and removes the underlying listing, via the
             // same status-change path a seller would use — Moderation just supplies the trigger.
+            // Both writes share one transaction so a failure partway through can't leave the
+            // report resolved while the listing itself stays Active (or vice versa).
             if (body.Resolution == ReportResolution.Remove)
-                await sender.Send(
-                    new ChangeListingStatusCommand(report.ListingId, reviewerId, true, ListingStatusAction.Remove), ct);
+            {
+                await CrossModuleTransaction.RunAsync(ct, async () =>
+                {
+                    report = await sender.Send(new ReviewReportCommand(id, reviewerId, body.Resolution), ct);
+                    await sender.Send(
+                        new ChangeListingStatusCommand(report.ListingId, reviewerId, true, ListingStatusAction.Remove), ct);
+                }, moderationDb, listingsDb);
+            }
+            else
+            {
+                report = await sender.Send(new ReviewReportCommand(id, reviewerId, body.Resolution), ct);
+            }
 
             return Results.Ok(report);
         })

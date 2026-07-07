@@ -4,6 +4,7 @@ using System.Text;
 using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Tests.Helpers;
 using AlpineGearHub.Listings.Application.DTOs;
+using AlpineGearHub.Promotions.Application.DTOs;
 using AlpineGearHub.Promotions.Domain.Entities;
 using AlpineGearHub.Promotions.Domain.Enums;
 using AlpineGearHub.Promotions.Domain.ValueObjects;
@@ -83,6 +84,29 @@ public sealed class PromotionsTests(AlpineGearHubApiFactory factory)
     }
 
     [Fact]
+    public async Task Webhook_PaymentSucceeded_ButListingNoLongerExists_RollsBackThePaymentConfirmationToo()
+    {
+        // Confirming the payment and flipping IsPromoted share one transaction (see
+        // CrossModuleTransaction) - this proves that pairing is atomic. A promotion pointing at a
+        // listing that doesn't exist (deleted, or just a bad reference) makes the second write
+        // throw, and the promotion's own "payment completed" write must be rolled back with it
+        // rather than leaving a promotion stuck marked "paid" for a boost that never landed.
+        var buyer = await TestFlows.RegisterAsync(factory);
+        var fakeListingId = Guid.NewGuid();
+        var paymentIntentId = $"pi_test_{Guid.NewGuid():N}";
+        var promotionId = await SeedPendingPromotionAsync(fakeListingId, paymentIntentId);
+
+        var (payload, signature) = WebhookSigner.SignPaymentIntentEvent(paymentIntentId, "payment_intent.succeeded");
+        var response = await PostWebhookAsync(payload, signature);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var promotionResponse = await buyer.GetAsync($"/api/promotions/{promotionId}");
+        var fetched = await promotionResponse.Content.ReadFromJsonAsync<PromotionResponse>();
+        fetched!.PaymentStatus.Should().Be("Pending");
+    }
+
+    [Fact]
     public async Task Webhook_InvalidSignature_IsRejected()
     {
         var response = await PostWebhookAsync(
@@ -112,7 +136,7 @@ public sealed class PromotionsTests(AlpineGearHubApiFactory factory)
         return await client.PostAsync("/api/promotions/webhook/stripe", content);
     }
 
-    private async Task SeedPendingPromotionAsync(Guid listingId, string paymentIntentId)
+    private async Task<Guid> SeedPendingPromotionAsync(Guid listingId, string paymentIntentId)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PromotionsDbContext>();
@@ -122,6 +146,7 @@ public sealed class PromotionsTests(AlpineGearHubApiFactory factory)
 
         db.Promotions.Add(promotion);
         await db.SaveChangesAsync();
+        return promotion.Id;
     }
 
     private async Task SeedCompletedPromotionAsync(Guid listingId, string paymentIntentId)
