@@ -33,6 +33,15 @@ public static class PromotionsEndpoints
                 throw new UnauthorizedAccessException("Only the seller can promote this listing.");
 
             var result = await sender.Send(new CreatePromotionCommand(body.ListingId, body.Tier), ct);
+
+            // No real Stripe key configured - CreatePromotionCommand already settled the payment
+            // synchronously (see StripePaymentGateway), so there's no webhook coming later to
+            // flip IsPromoted. Do it right here instead. (Not wrapped in the cross-module
+            // transaction the webhook path uses: this is a dev-only convenience fallback, not a
+            // real-money path, and the listing was already confirmed to exist moments ago above.)
+            if (result.PaymentStatus == "Completed")
+                await sender.Send(new SetListingPromotedCommand(result.ListingId, true), ct);
+
             return Results.Created($"/api/promotions/{result.Id}", result);
         })
         .RequireAuthorization()

@@ -36,6 +36,12 @@ internal sealed class CreatePromotionCommandHandler(
 
         promotion.AttachPaymentIntent(intent.PaymentIntentId);
 
+        // A null ClientSecret means the gateway already settled the payment synchronously (the
+        // no-real-Stripe-key dev fallback) - there's no client-side confirmation step to wait on
+        // and no webhook coming later, so mark it paid now instead of leaving it stuck Pending.
+        if (intent.ClientSecret is null)
+            promotion.MarkPaymentCompleted();
+
         await promotionRepository.AddAsync(promotion, cancellationToken);
         await promotionRepository.SaveChangesAsync(cancellationToken);
 

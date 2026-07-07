@@ -14,13 +14,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AlpineGearHub.Api.Tests;
 
-// CreatePromotionCommand calls the real Stripe API, which always fails here since there's no
-// real test key configured (see appsettings.Development.json's sk_test_placeholder - same story
-// as when I tested this by hand). So these tests only cover what doesn't reach that call: the
-// ownership check (fires in the Host before the command even runs) and the duplicate-active-
-// promotion guard (fires inside the handler before it calls Stripe). The webhook side is
-// exercised independently by seeding a Promotion straight into the DB and self-signing the
-// payload, exactly like the manual verification during Promotions phase.
+// No real Stripe test key is configured here (see appsettings.Development.json's
+// sk_test_placeholder), so StripePaymentGateway's no-real-key fallback kicks in: it settles the
+// payment synchronously instead of calling Stripe, which means the CreatePromotion happy path is
+// actually exercisable now (see CreatePromotion_WithNoStripeKeyConfigured_...below) - it just
+// exercises the dev fallback rather than a real Stripe round trip. The webhook side is exercised
+// independently by seeding a Promotion straight into the DB and self-signing the payload, exactly
+// like the manual verification during the Promotions phase.
 [Collection(DatabaseCollection.Name)]
 public sealed class PromotionsTests(AlpineGearHubApiFactory factory)
 {
@@ -34,6 +34,24 @@ public sealed class PromotionsTests(AlpineGearHubApiFactory factory)
         var response = await stranger.PostAsync("/api/promotions", new CreatePromotionRequest(listing.Id, PromotionTier.Standard));
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task CreatePromotion_WithNoStripeKeyConfigured_SettlesImmediatelyAndPromotesTheListing()
+    {
+        var seller = await TestFlows.RegisterAsync(factory);
+        var listing = await TestFlows.CreateAndPublishListingAsync(seller);
+
+        var response = await seller.PostAsync("/api/promotions", new CreatePromotionRequest(listing.Id, PromotionTier.Standard));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var promotion = await response.Content.ReadFromJsonAsync<PromotionResponse>();
+        promotion!.PaymentStatus.Should().Be("Completed");
+        promotion.ClientSecret.Should().BeNull();
+
+        var listingResponse = await seller.GetAsync($"/api/listings/{listing.Id}");
+        var fetchedListing = await listingResponse.Content.ReadFromJsonAsync<ListingResponse>();
+        fetchedListing!.IsPromoted.Should().BeTrue();
     }
 
     [Fact]

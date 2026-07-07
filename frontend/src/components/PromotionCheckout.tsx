@@ -27,8 +27,12 @@ export function PromotionCheckout({ listingId }: { listingId: string }) {
     setCreateError(null)
     try {
       const promotion = await createPromotion.mutateAsync(tier)
-      if (!promotion.clientSecret) throw new Error('Payment could not be initiated')
-      setClientSecret(promotion.clientSecret)
+      // No clientSecret means there's no real Stripe key configured on the backend - the
+      // promotion was already marked paid and the listing already promoted synchronously, so
+      // there's nothing to confirm here. The invalidated `promotions` query (see
+      // useCreatePromotion) refetches and this component re-renders into the activePromotion
+      // branch above on its own.
+      if (promotion.clientSecret) setClientSecret(promotion.clientSecret)
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Could not start checkout')
     }

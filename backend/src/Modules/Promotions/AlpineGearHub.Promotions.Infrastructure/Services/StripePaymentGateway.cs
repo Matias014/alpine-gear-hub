@@ -6,11 +6,16 @@ namespace AlpineGearHub.Promotions.Infrastructure.Services;
 
 internal sealed class StripePaymentGateway : IPaymentGateway
 {
+    private const string PlaceholderSecretKey = "sk_test_placeholder";
+
+    private readonly bool _hasRealKey;
     private readonly string _webhookSecret;
 
     public StripePaymentGateway(IConfiguration configuration)
     {
-        StripeConfiguration.ApiKey = configuration["Stripe:SecretKey"];
+        var secretKey = configuration["Stripe:SecretKey"];
+        _hasRealKey = !string.IsNullOrWhiteSpace(secretKey) && secretKey != PlaceholderSecretKey;
+        StripeConfiguration.ApiKey = secretKey;
         _webhookSecret = configuration["Stripe:WebhookSecret"] ?? string.Empty;
     }
 
@@ -20,6 +25,14 @@ internal sealed class StripePaymentGateway : IPaymentGateway
         IReadOnlyDictionary<string, string> metadata,
         CancellationToken ct = default)
     {
+        // No real key configured (local/demo runs, CI) - every real call here would just fail
+        // with an auth error, so skip Stripe entirely and report the payment as already settled
+        // instead of making "promote a listing" permanently broken without a Stripe account.
+        // ParseWebhookEvent below is unaffected either way - it's a local signature check, not a
+        // Stripe API call.
+        if (!_hasRealKey)
+            return new PaymentIntentResult($"pi_dev_{Guid.NewGuid():N}", ClientSecret: null);
+
         var service = new PaymentIntentService();
         var intent = await service.CreateAsync(new PaymentIntentCreateOptions
         {
