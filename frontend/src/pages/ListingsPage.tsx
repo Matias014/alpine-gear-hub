@@ -62,31 +62,38 @@ export default function ListingsPage() {
           </button>
         </form>
 
-        <select
-          value={categoryId ?? ''}
-          onChange={(e) => updateParam('categoryId', e.target.value || undefined)}
-          className={formInputClasses}
-        >
-          <option value="">All categories</option>
-          {categories?.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+        {/* Category/condition filters only make sense for the full marketplace - "My listings"
+            is just your own handful of items, so a category dropdown there is more clutter than
+            help; search still earns its place if you ever have a lot of listings. */}
+        {!sellerId && (
+          <>
+            <select
+              value={categoryId ?? ''}
+              onChange={(e) => updateParam('categoryId', e.target.value || undefined)}
+              className={formInputClasses}
+            >
+              <option value="">All categories</option>
+              {categories?.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
 
-        <select
-          value={condition ?? ''}
-          onChange={(e) => updateParam('condition', e.target.value || undefined)}
-          className={formInputClasses}
-        >
-          <option value="">Any condition</option>
-          {CONDITIONS.map((value) => (
-            <option key={value} value={value}>
-              {conditionLabels[value]}
-            </option>
-          ))}
-        </select>
+            <select
+              value={condition ?? ''}
+              onChange={(e) => updateParam('condition', e.target.value || undefined)}
+              className={formInputClasses}
+            >
+              <option value="">Any condition</option>
+              {CONDITIONS.map((value) => (
+                <option key={value} value={value}>
+                  {conditionLabels[value]}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
       {isLoading && <p className="mt-8 text-sm text-gray-500">Loading listings…</p>}

@@ -22,7 +22,9 @@ export function ListingCard({ listing }: { listing: ListingSummaryResponse }) {
 
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-1 text-sm font-medium text-gray-900">{listing.title}</h3>
+          <h3 className="line-clamp-2 text-sm font-medium text-gray-900" title={listing.title}>
+            {listing.title}
+          </h3>
           {listing.isPromoted && (
             <span className="shrink-0 rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
               Featured
@@ -32,9 +34,14 @@ export function ListingCard({ listing }: { listing: ListingSummaryResponse }) {
 
         <p className="mt-1 text-base font-semibold text-gray-900">{formatPrice(listing.price, listing.currency)}</p>
 
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>{conditionLabels[listing.condition]}</span>
-          <span>{listing.location}</span>
+        {/* shrink-0 + truncate (not two plain spans) - condition is always short ("Like New" at
+            most) so it never needs to shrink, but a long location used to wrap mid-word once the
+            card got narrow; now it ellipsizes on one line instead. */}
+        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-gray-500">
+          <span className="shrink-0">{conditionLabels[listing.condition]}</span>
+          <span className="truncate text-right" title={listing.location}>
+            {listing.location}
+          </span>
         </div>
 
         {listing.status !== 'Active' && (
