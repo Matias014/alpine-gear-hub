@@ -40,7 +40,7 @@
 | SafetyCertification | string?       | e.g. "CE EN 892", "UIAA 101", "EN 12492"                          |
 | Location            | string        |                                                                    |
 | ViewsCount          | int           |                                                                    |
-| IsPromoted          | bool          | set by Promotions module via domain event                          |
+| IsPromoted          | bool          | set directly by the Host endpoint layer once a promotion payment is confirmed — see [Cross-Module Communication](#cross-module-communication) |
 | CreatedAt           | DateTime      |                                                                    |
 | UpdatedAt           | DateTime      |                                                                    |
 | ExpiresAt           | DateTime      | 60 days from activation by default                                 |
@@ -114,7 +114,7 @@
 | PaymentStatus         | PaymentStatus   | enum: Pending, Completed, Failed, Refunded  |
 | StripePaymentIntentId | string?         | null until Stripe confirms                  |
 
-> When `PaymentStatus` transitions to `Completed`, a `PromotionActivatedEvent` domain event is raised. The Listings module handles it and flips `IsPromoted = true` on the relevant listing.
+> When `PaymentStatus` transitions to `Completed` (via the Stripe webhook), the Host endpoint layer calls Listings' `SetListingPromotedCommand` in the same transaction to flip `IsPromoted = true` on the relevant listing — see [Cross-Module Communication](#cross-module-communication).
 
 ---
 
@@ -177,13 +177,16 @@ Any transition not listed above must be rejected with a domain exception (`Inval
 
 ---
 
-## Domain Events
+## Cross-Module Communication
 
-| Event                     | Raised by           | Handled by                                           |
-|---------------------------|---------------------|------------------------------------------------------|
-| `ListingPublishedEvent`   | Listings module     | —                                                    |
-| `ListingSoldEvent`        | Listings module     | —                                                    |
-| `ListingRemovedEvent`     | Moderation module   | Listings module (sets status = Removed)              |
-| `MessageSentEvent`        | Chat module         | — (SignalR push handled in-process by the hub)       |
-| `PromotionActivatedEvent` | Promotions module   | Listings module (sets IsPromoted = true)             |
-| `PromotionExpiredEvent`   | System (background) | Listings module (sets IsPromoted = false)            |
+Modules never reference each other's Domain or Infrastructure layers directly. There is no event bus or saga — instead, the Host endpoint layer (`Host/AlpineGearHub.Api/Endpoints/*.cs`) orchestrates multi-module flows with sequential MediatR `ISender.Send` calls, one per module's Application layer:
+
+| Flow                                    | Triggering endpoint                        | Sequence                                                                                     |
+|------------------------------------------|---------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Moderator removes a reported listing      | `POST /api/moderation/reports/{id}/review`   | `ReviewReportCommand` (Moderation) → `ChangeListingStatusCommand` (Listings, action `Remove`)  |
+| Promotion payment confirmed via webhook   | `POST /api/promotions/webhook`               | `ProcessPaymentWebhookCommand` (Promotions) → `SetListingPromotedCommand` (Listings)           |
+| Promotion created with no Stripe key set  | `POST /api/promotions`                       | `CreatePromotionCommand` settles immediately (dev-only path) → `SetListingPromotedCommand` (Listings) |
+
+Real-time chat delivery (`MessageSentEvent`-shaped behavior) is handled in-process by the SignalR hub in the Chat module's Infrastructure layer — it's a push on the same request, not a cross-module event.
+
+Where a flow's two writes must succeed or fail together (the first two rows above), the endpoint wraps both `Send` calls in `CrossModuleTransaction` (`Host/AlpineGearHub.Api/Infrastructure/CrossModuleTransaction.cs`), which enlists the second module's `DbContext` on the first module's open transaction so a failure partway through rolls back both writes.

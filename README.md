@@ -27,7 +27,7 @@ tighter access policy (e.g. CloudFront + presigned URLs) instead of world-readab
 
 ## Architecture
 
-The backend is a **modular monolith** — one deployable process, but the codebase is sliced vertically by business capability. Each module (`Identity`, `Listings`, `Chat`, `Moderation`, `Promotions`) is internally structured as **Clean Architecture** with Domain / Application / Infrastructure layers. Modules communicate exclusively through domain events and explicit contracts — never by referencing each other's infrastructure or domain layer directly.
+The backend is a **modular monolith** — one deployable process, but the codebase is sliced vertically by business capability. Each module (`Identity`, `Listings`, `Chat`, `Moderation`, `Promotions`) is internally structured as **Clean Architecture** with Domain / Application / Infrastructure layers. Modules never reference each other's Domain or Infrastructure layers directly — cross-module orchestration instead happens at the Host endpoint layer via sequential MediatR `ISender.Send` calls into each module's Application layer (e.g. Moderation resolving a report then removing the listing, or the Stripe webhook confirming a payment then flipping `IsPromoted`). Multi-module writes that must succeed or fail together go through `CrossModuleTransaction` (`Host/AlpineGearHub.Api/Infrastructure/CrossModuleTransaction.cs`), which enlists a second module's `DbContext` on the first module's transaction — there's no event bus or saga.
 
 Each module owns a separate PostgreSQL schema (`identity`, `listings`, `chat`, `moderation`, `promotions`), enforcing the modular boundary at the database level without requiring a separate database per module.
 
