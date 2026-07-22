@@ -76,7 +76,7 @@ namespace AlpineGearHub.Promotions.Infrastructure.Migrations
 
             modelBuilder.Entity("AlpineGearHub.Promotions.Domain.Entities.Promotion", b =>
                 {
-                    b.OwnsOne("AlpineGearHub.Promotions.Domain.ValueObjects.Money", "Price", b1 =>
+                    b.OwnsOne("AlpineGearHub.SharedKernel.Money", "Price", b1 =>
                         {
                             b1.Property<Guid>("PromotionId")
                                 .HasColumnType("uuid");

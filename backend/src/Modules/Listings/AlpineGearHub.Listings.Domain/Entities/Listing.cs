@@ -1,6 +1,5 @@
 using AlpineGearHub.Listings.Domain.Enums;
 using AlpineGearHub.Listings.Domain.Exceptions;
-using AlpineGearHub.Listings.Domain.ValueObjects;
 using AlpineGearHub.SharedKernel;
 
 namespace AlpineGearHub.Listings.Domain.Entities;

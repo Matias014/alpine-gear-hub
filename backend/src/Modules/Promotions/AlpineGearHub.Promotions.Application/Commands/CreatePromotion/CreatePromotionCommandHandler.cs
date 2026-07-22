@@ -5,7 +5,7 @@ using AlpineGearHub.Promotions.Domain;
 using AlpineGearHub.Promotions.Domain.Entities;
 using AlpineGearHub.Promotions.Domain.Exceptions;
 using AlpineGearHub.Promotions.Domain.Repositories;
-using AlpineGearHub.Promotions.Domain.ValueObjects;
+using AlpineGearHub.SharedKernel;
 using MediatR;
 
 namespace AlpineGearHub.Promotions.Application.Commands.CreatePromotion;

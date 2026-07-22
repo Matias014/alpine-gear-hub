@@ -158,7 +158,7 @@ namespace AlpineGearHub.Listings.Infrastructure.Migrations
 
             modelBuilder.Entity("AlpineGearHub.Listings.Domain.Entities.Listing", b =>
                 {
-                    b.OwnsOne("AlpineGearHub.Listings.Domain.ValueObjects.Money", "Price", b1 =>
+                    b.OwnsOne("AlpineGearHub.SharedKernel.Money", "Price", b1 =>
                         {
                             b1.Property<Guid>("ListingId")
                                 .HasColumnType("uuid");

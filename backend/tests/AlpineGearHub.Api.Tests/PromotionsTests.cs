@@ -7,8 +7,8 @@ using AlpineGearHub.Listings.Application.DTOs;
 using AlpineGearHub.Promotions.Application.DTOs;
 using AlpineGearHub.Promotions.Domain.Entities;
 using AlpineGearHub.Promotions.Domain.Enums;
-using AlpineGearHub.Promotions.Domain.ValueObjects;
 using AlpineGearHub.Promotions.Infrastructure.Data;
+using AlpineGearHub.SharedKernel;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 

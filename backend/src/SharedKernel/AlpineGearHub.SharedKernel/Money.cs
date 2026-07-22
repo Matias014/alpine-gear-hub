@@ -1,6 +1,4 @@
-using AlpineGearHub.SharedKernel;
-
-namespace AlpineGearHub.Promotions.Domain.ValueObjects;
+namespace AlpineGearHub.SharedKernel;
 
 public sealed class Money : ValueObject
 {

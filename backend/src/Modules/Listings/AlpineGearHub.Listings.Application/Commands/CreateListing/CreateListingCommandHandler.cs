@@ -3,7 +3,7 @@ using AlpineGearHub.Listings.Application.Extensions;
 using AlpineGearHub.Listings.Application.Interfaces;
 using AlpineGearHub.Listings.Domain.Entities;
 using AlpineGearHub.Listings.Domain.Repositories;
-using AlpineGearHub.Listings.Domain.ValueObjects;
+using AlpineGearHub.SharedKernel;
 using MediatR;
 
 namespace AlpineGearHub.Listings.Application.Commands.CreateListing;
