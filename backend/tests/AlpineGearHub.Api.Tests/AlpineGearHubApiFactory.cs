@@ -9,21 +9,18 @@ namespace AlpineGearHub.Api.Tests;
 
 public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:18")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder(image: "postgres:18")
         .Build();
 
     // Added this after CI failed - the app now connects to Redis eagerly at startup (login
     // rate limiting), and the hardcoded "localhost:6379" only worked on my machine because I
     // happen to have a real Redis running there via docker-compose. CI has nothing at that address.
-    private readonly RedisContainer _redis = new RedisBuilder()
-        .WithImage("redis:7-alpine")
+    private readonly RedisContainer _redis = new RedisBuilder(image: "redis:7-alpine")
         .Build();
 
     // Added so the real image-upload path (previously only ever exercised manually against a
     // dev MinIO at localhost:9000) is actually covered by CI too - see ListingsTests.UploadImage_*.
-    private readonly MinioContainer _minio = new MinioBuilder()
-        .WithImage("minio/minio:latest")
+    private readonly MinioContainer _minio = new MinioBuilder(image: "minio/minio:latest")
         .WithUsername("minioadmin")
         .WithPassword("minioadmin")
         .Build();
