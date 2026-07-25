@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
 import { RequireModerator } from './components/RequireModerator'
+import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import ConversationPage from './pages/ConversationPage'
 import ConversationsPage from './pages/ConversationsPage'
 import CreateListingPage from './pages/CreateListingPage'
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/listings" element={<ListingsPage />} />
         <Route path="/listings/:id" element={<ListingDetailPage />} />
         <Route
