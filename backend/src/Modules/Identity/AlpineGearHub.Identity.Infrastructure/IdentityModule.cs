@@ -1,5 +1,7 @@
 using AlpineGearHub.Identity.Application.Behaviors;
+using AlpineGearHub.Identity.Application.Commands.ConfirmPasswordReset;
 using AlpineGearHub.Identity.Application.Commands.Register;
+using AlpineGearHub.Identity.Application.Commands.RequestPasswordReset;
 using AlpineGearHub.Identity.Application.Interfaces;
 using AlpineGearHub.Identity.Domain.Entities;
 using AlpineGearHub.Identity.Domain.Repositories;
@@ -33,11 +35,14 @@ public static class IdentityModule
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<ILoginRateLimiter, RedisLoginRateLimiter>();
+        services.AddScoped<IEmailSender, LoggingEmailSender>();
 
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(RegisterCommand).Assembly));
 
         services.AddScoped<IValidator<RegisterCommand>, RegisterCommandValidator>();
+        services.AddScoped<IValidator<RequestPasswordResetCommand>, RequestPasswordResetCommandValidator>();
+        services.AddScoped<IValidator<ConfirmPasswordResetCommand>, ConfirmPasswordResetCommandValidator>();
 
         services.AddTransient(
             typeof(IPipelineBehavior<,>),

@@ -6,6 +6,7 @@ namespace AlpineGearHub.Identity.Domain.Entities;
 public class User : AggregateRoot
 {
     private readonly List<RefreshToken> _refreshTokens = [];
+    private readonly List<PasswordResetToken> _passwordResetTokens = [];
 
     public string Email { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
@@ -14,6 +15,7 @@ public class User : AggregateRoot
     public DateTime CreatedAt { get; private set; }
 
     public IReadOnlyList<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
+    public IReadOnlyList<PasswordResetToken> PasswordResetTokens => _passwordResetTokens.AsReadOnly();
 
     private User() { }
 
@@ -46,4 +48,27 @@ public class User : AggregateRoot
 
     public RefreshToken? FindActiveRefreshToken(string tokenHash) =>
         _refreshTokens.FirstOrDefault(t => t.TokenHash == tokenHash && t.IsActive);
+
+    public void RevokeAllRefreshTokens()
+    {
+        foreach (var token in _refreshTokens.Where(t => t.IsActive))
+            token.Revoke();
+    }
+
+    public PasswordResetToken AddPasswordResetToken(string tokenHash, DateTime expiresAt)
+    {
+        // Requesting a new reset link should invalidate any still-outstanding one, same as
+        // AddRefreshToken does for logins - otherwise an old, already-superseded link stays usable.
+        foreach (var existing in _passwordResetTokens.Where(t => t.IsActive))
+            existing.MarkUsed();
+
+        var token = PasswordResetToken.Create(Id, tokenHash, expiresAt);
+        _passwordResetTokens.Add(token);
+        return token;
+    }
+
+    public PasswordResetToken? FindActivePasswordResetToken(string tokenHash) =>
+        _passwordResetTokens.FirstOrDefault(t => t.TokenHash == tokenHash && t.IsActive);
+
+    public void SetPassword(string newPasswordHash) => PasswordHash = newPasswordHash;
 }

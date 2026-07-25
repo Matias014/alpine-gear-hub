@@ -40,5 +40,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Metadata.FindNavigation(nameof(User.RefreshTokens))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(u => u.PasswordResetTokens)
+            .WithOne()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Metadata.FindNavigation(nameof(User.PasswordResetTokens))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }

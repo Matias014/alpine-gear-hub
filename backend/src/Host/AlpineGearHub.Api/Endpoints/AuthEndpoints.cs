@@ -1,6 +1,8 @@
+using AlpineGearHub.Identity.Application.Commands.ConfirmPasswordReset;
 using AlpineGearHub.Identity.Application.Commands.Login;
 using AlpineGearHub.Identity.Application.Commands.RefreshToken;
 using AlpineGearHub.Identity.Application.Commands.Register;
+using AlpineGearHub.Identity.Application.Commands.RequestPasswordReset;
 using AlpineGearHub.Identity.Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +32,19 @@ public static class AuthEndpoints
             .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
             .WithSummary("Refresh access token");
 
+        group.MapPost("/forgot-password", ForgotPassword)
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
+            .WithSummary("Request a password reset email");
+
+        group.MapPost("/reset-password", ResetPassword)
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
+            .WithSummary("Reset a password using a reset token");
+
         return group;
     }
 
@@ -58,5 +73,23 @@ public static class AuthEndpoints
     {
         var response = await sender.Send(command, ct);
         return Results.Ok(response);
+    }
+
+    private static async Task<IResult> ForgotPassword(
+        [FromBody] RequestPasswordResetCommand command,
+        ISender sender,
+        CancellationToken ct)
+    {
+        await sender.Send(command, ct);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> ResetPassword(
+        [FromBody] ConfirmPasswordResetCommand command,
+        ISender sender,
+        CancellationToken ct)
+    {
+        await sender.Send(command, ct);
+        return Results.NoContent();
     }
 }

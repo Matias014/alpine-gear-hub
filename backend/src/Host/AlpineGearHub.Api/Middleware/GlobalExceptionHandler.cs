@@ -15,6 +15,7 @@ namespace AlpineGearHub.Api.Middleware;
 ///   EmailAlreadyTakenException              → 409 Conflict
 ///   InvalidCredentialsException             → 401 Unauthorized
 ///   InvalidRefreshTokenException            → 401 Unauthorized
+///   InvalidPasswordResetTokenException      → 401 Unauthorized
 ///   TooManyLoginAttemptsException           → 429 Too Many Requests
 ///   UnauthorizedAccessException             → 403 Forbidden
 ///   InvalidOperationException (not found)  → 404 Not Found
@@ -44,7 +45,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
                 "Conflict",
                 exception.Message),
 
-            InvalidCredentialsException or InvalidRefreshTokenException => (
+            InvalidCredentialsException or InvalidRefreshTokenException or InvalidPasswordResetTokenException => (
                 StatusCodes.Status401Unauthorized,
                 "Unauthorized",
                 exception.Message),

@@ -1,5 +1,8 @@
+using AlpineGearHub.Api.Tests.Helpers;
+using AlpineGearHub.Identity.Application.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
@@ -57,6 +60,11 @@ public sealed class AlpineGearHubApiFactory : WebApplicationFactory<Program>, IA
         // WebhookSigner.cs below needs to know the exact secret to sign test payloads against.
         builder.UseSetting("Stripe:SecretKey", "sk_test_placeholder");
         builder.UseSetting("Stripe:WebhookSecret", "whsec_test_secret_for_integration_tests");
+
+        // Swaps out the real (log-only) email sender so tests can read back the reset token that
+        // would have been emailed, rather than scraping application logs for it.
+        builder.ConfigureTestServices(services =>
+            services.AddSingleton<IEmailSender, CapturingEmailSender>());
     }
 
     public async Task InitializeAsync() =>

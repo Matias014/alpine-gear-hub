@@ -45,10 +45,23 @@ public sealed class TokenService(IConfiguration configuration) : ITokenService
         var jwtSection = configuration.GetSection("Jwt");
         var expiryDays = int.Parse(jwtSection["RefreshTokenExpiryDays"] ?? "7");
 
+        return GenerateOpaqueToken(TimeSpan.FromDays(expiryDays));
+    }
+
+    public (string RawToken, string TokenHash, DateTime ExpiresAt) GeneratePasswordResetToken()
+    {
+        var jwtSection = configuration.GetSection("Jwt");
+        var expiryMinutes = int.Parse(jwtSection["PasswordResetTokenExpiryMinutes"] ?? "60");
+
+        return GenerateOpaqueToken(TimeSpan.FromMinutes(expiryMinutes));
+    }
+
+    private static (string RawToken, string TokenHash, DateTime ExpiresAt) GenerateOpaqueToken(TimeSpan lifetime)
+    {
         var rawBytes = RandomNumberGenerator.GetBytes(64);
         var rawToken = Convert.ToBase64String(rawBytes);
         var tokenHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
-        var expiresAt = DateTime.UtcNow.AddDays(expiryDays);
+        var expiresAt = DateTime.UtcNow.Add(lifetime);
 
         return (rawToken, tokenHash, expiresAt);
     }
