@@ -13,6 +13,42 @@ IMAGES_DIR="$SCRIPT_DIR/seed-images"
 API="${1:-http://localhost:8080/api}"
 PASSWORD="Demo1234!"
 
+urldecode() {
+  python3 -c "import urllib.parse,sys; print(urllib.parse.unquote(sys.argv[1]), end='')" "$1"
+}
+
+# Confirms $1's email if it isn't already, and echoes a fresh access token that actually carries
+# the resulting email_verified=true claim (confirming doesn't retroactively update a token already
+# issued - see Program.cs's RequireConfirmedEmail policy comment). Safe to call on an
+# already-confirmed account: resend-confirmation is a documented no-op in that case, so the
+# dev-only link lookup then 404s and this just re-uses $2 unchanged.
+ensure_confirmed_and_get_fresh_token() {
+  local email="$1" refresh_token="$2" access_token="$3"
+
+  curl -s -X POST "$API/auth/resend-confirmation" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg email "$email" '{email: $email}')" > /dev/null
+
+  local confirmation_link
+  confirmation_link=$(curl -s "$API/auth/dev/last-confirmation-link?email=$email" | jq -r '.link // empty')
+
+  if [ -n "$confirmation_link" ]; then
+    local confirmation_token
+    confirmation_token=$(urldecode "${confirmation_link#*token=}")
+    curl -s -X POST "$API/auth/confirm-email" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg token "$confirmation_token" '{token: $token}')" > /dev/null
+
+    local refresh_response
+    refresh_response=$(curl -s -X POST "$API/auth/refresh" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg rt "$refresh_token" '{refreshToken: $rt}')")
+    access_token=$(echo "$refresh_response" | jq -r '.accessToken')
+  fi
+
+  echo "$access_token"
+}
+
 # name | email
 SELLERS=(
   "Alex Sterling|alex.sterling@alpinegearhub.local"
@@ -33,17 +69,26 @@ for entry in "${SELLERS[@]}"; do
 
   if [ "$register_status" = "201" ] || [ "$register_status" = "200" ]; then
     token=$(echo "$register_body" | jq -r '.accessToken')
+    refresh_token=$(echo "$register_body" | jq -r '.refreshToken')
   else
     login_response=$(curl -s -X POST "$API/auth/login" \
       -H "Content-Type: application/json" \
       -d "{\"email\":\"$email\",\"password\":\"$PASSWORD\"}")
     token=$(echo "$login_response" | jq -r '.accessToken')
+    refresh_token=$(echo "$login_response" | jq -r '.refreshToken')
   fi
 
   if [ -z "$token" ] || [ "$token" = "null" ]; then
     echo "Could not obtain an access token for $email. Is the backend running at $API? Aborting."
     exit 1
   fi
+
+  # Every account - freshly registered or an existing one from before this check existed - starts
+  # (or defaulted to) email-unconfirmed, which now blocks publishing listings (see the
+  # RequireConfirmedEmail policy). There's no real inbox to check in dev - LoggingEmailSender just
+  # logs the link - so this confirms via the dev-only lookup endpoint instead (see Program.cs; only
+  # mapped when ASPNETCORE_ENVIRONMENT=Development, i.e. exactly the setup this script targets).
+  token=$(ensure_confirmed_and_get_fresh_token "$email" "$refresh_token" "$token")
 
   SELLER_TOKEN["$email"]="$token"
   echo "  $full_name <$email> ready"
