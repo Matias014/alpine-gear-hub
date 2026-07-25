@@ -27,6 +27,7 @@ public sealed class TokenService(IConfiguration configuration) : ITokenService
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Name, user.FullName),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim(AuthClaimTypes.EmailVerified, user.EmailConfirmed ? "true" : "false"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
@@ -54,6 +55,14 @@ public sealed class TokenService(IConfiguration configuration) : ITokenService
         var expiryMinutes = int.Parse(jwtSection["PasswordResetTokenExpiryMinutes"] ?? "60");
 
         return GenerateOpaqueToken(TimeSpan.FromMinutes(expiryMinutes));
+    }
+
+    public (string RawToken, string TokenHash, DateTime ExpiresAt) GenerateEmailConfirmationToken()
+    {
+        var jwtSection = configuration.GetSection("Jwt");
+        var expiryHours = int.Parse(jwtSection["EmailConfirmationTokenExpiryHours"] ?? "72");
+
+        return GenerateOpaqueToken(TimeSpan.FromHours(expiryHours));
     }
 
     private static (string RawToken, string TokenHash, DateTime ExpiresAt) GenerateOpaqueToken(TimeSpan lifetime)

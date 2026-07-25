@@ -9,6 +9,7 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options) : Db
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -16,5 +17,6 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options) : Db
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
         modelBuilder.ApplyConfiguration(new PasswordResetTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new EmailConfirmationTokenConfiguration());
     }
 }

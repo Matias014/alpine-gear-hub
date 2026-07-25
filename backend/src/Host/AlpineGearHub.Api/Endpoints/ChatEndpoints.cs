@@ -39,6 +39,7 @@ public static class ChatEndpoints
             return Results.Created($"/api/chat/conversations/{result.Id}", result);
         })
         .RequireAuthorization()
+        .RequireAuthorization("RequireConfirmedEmail")
         .WithSummary("Start (or resume) a conversation about a listing");
 
         group.MapGet("/conversations/{id:guid}/messages", async (
@@ -66,6 +67,7 @@ public static class ChatEndpoints
             return Results.Created($"/api/chat/conversations/{id}/messages/{result.Id}", result);
         })
         .RequireAuthorization()
+        .RequireAuthorization("RequireConfirmedEmail")
         .WithSummary("Send a message in a conversation");
 
         group.MapPost("/conversations/{id:guid}/read", async (

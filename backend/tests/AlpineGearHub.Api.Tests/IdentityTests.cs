@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using AlpineGearHub.Api.Tests.Helpers;
+using AlpineGearHub.Identity.Application.Commands.ConfirmEmail;
 using AlpineGearHub.Identity.Application.Commands.ConfirmPasswordReset;
 using AlpineGearHub.Identity.Application.Commands.Login;
 using AlpineGearHub.Identity.Application.Commands.RefreshToken;
 using AlpineGearHub.Identity.Application.Commands.Register;
 using AlpineGearHub.Identity.Application.Commands.RequestPasswordReset;
+using AlpineGearHub.Identity.Application.Commands.ResendEmailConfirmation;
 using AlpineGearHub.Identity.Application.DTOs;
 using AlpineGearHub.Identity.Application.Interfaces;
 using FluentAssertions;
@@ -268,5 +270,118 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
             new ConfirmPasswordResetCommand(firstToken, "NewPassword2@"));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private string GetLastEmailConfirmationToken(string email) =>
+        ((CapturingEmailSender)factory.Services.GetRequiredService<IEmailSender>()).GetLastConfirmationToken(email);
+
+    [Fact]
+    public async Task Register_SendsAnEmailConfirmationToken()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Confirm Email User", email, "Password1!"));
+
+        GetLastEmailConfirmationToken(email).Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task Login_WithUnconfirmedEmail_StillSucceeds()
+    {
+        // Email confirmation gates publishing listings and messaging (see the
+        // "RequireConfirmedEmail" policy), not login itself - registering shouldn't strand anyone
+        // who hasn't clicked the link yet.
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Unconfirmed Login User", email, "Password1!"));
+
+        var response = await client.PostAsync("/api/auth/login", new LoginCommand(email, "Password1!"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_WithValidToken_Succeeds()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Confirm Success User", email, "Password1!"));
+        var token = GetLastEmailConfirmationToken(email);
+
+        var response = await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(token));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_ReusingAnAlreadyUsedToken_ReturnsUnauthorized()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Reuse Confirm User", email, "Password1!"));
+        var token = GetLastEmailConfirmationToken(email);
+        await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(token));
+
+        var response = await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(token));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ConfirmEmail_WithGarbageToken_ReturnsUnauthorized()
+    {
+        var client = new ApiClient(factory.CreateClient());
+
+        var response = await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand("not-a-real-token"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_WithUnregisteredEmail_ReturnsNoContent()
+    {
+        // Same no-enumeration story as forgot-password.
+        var client = new ApiClient(factory.CreateClient());
+
+        var response = await client.PostAsync("/api/auth/resend-confirmation",
+            new ResendEmailConfirmationCommand($"{Guid.NewGuid():N}@nobody.local"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_SendsAFreshTokenThatInvalidatesTheOriginal()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Resend User", email, "Password1!"));
+        var originalToken = GetLastEmailConfirmationToken(email);
+
+        await client.PostAsync("/api/auth/resend-confirmation", new ResendEmailConfirmationCommand(email));
+        var freshToken = GetLastEmailConfirmationToken(email);
+
+        freshToken.Should().NotBe(originalToken);
+        var confirmWithFresh = await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(freshToken));
+        confirmWithFresh.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var confirmWithOriginal = await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(originalToken));
+        confirmWithOriginal.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ResendConfirmation_ForAlreadyConfirmedAccount_DoesNotSendAnotherToken()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Already Confirmed User", email, "Password1!"));
+        var token = GetLastEmailConfirmationToken(email);
+        await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(token));
+
+        var response = await client.PostAsync("/api/auth/resend-confirmation", new ResendEmailConfirmationCommand(email));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        // No new email captured - still the one from registration.
+        GetLastEmailConfirmationToken(email).Should().Be(token);
     }
 }

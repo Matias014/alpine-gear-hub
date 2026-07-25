@@ -8,6 +8,7 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<User?> GetByRefreshTokenHashAsync(string tokenHash, CancellationToken ct = default);
     Task<User?> GetByPasswordResetTokenHashAsync(string tokenHash, CancellationToken ct = default);
+    Task<User?> GetByEmailConfirmationTokenHashAsync(string tokenHash, CancellationToken ct = default);
     Task AddAsync(User user, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

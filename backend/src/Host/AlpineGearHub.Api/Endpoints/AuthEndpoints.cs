@@ -1,8 +1,10 @@
+using AlpineGearHub.Identity.Application.Commands.ConfirmEmail;
 using AlpineGearHub.Identity.Application.Commands.ConfirmPasswordReset;
 using AlpineGearHub.Identity.Application.Commands.Login;
 using AlpineGearHub.Identity.Application.Commands.RefreshToken;
 using AlpineGearHub.Identity.Application.Commands.Register;
 using AlpineGearHub.Identity.Application.Commands.RequestPasswordReset;
+using AlpineGearHub.Identity.Application.Commands.ResendEmailConfirmation;
 using AlpineGearHub.Identity.Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +47,18 @@ public static class AuthEndpoints
             .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
             .WithSummary("Reset a password using a reset token");
 
+        group.MapPost("/confirm-email", ConfirmEmail)
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .WithSummary("Confirm an account's email using a confirmation token");
+
+        group.MapPost("/resend-confirmation", ResendConfirmation)
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)
+            .WithSummary("Resend the email confirmation link");
+
         return group;
     }
 
@@ -86,6 +100,24 @@ public static class AuthEndpoints
 
     private static async Task<IResult> ResetPassword(
         [FromBody] ConfirmPasswordResetCommand command,
+        ISender sender,
+        CancellationToken ct)
+    {
+        await sender.Send(command, ct);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> ConfirmEmail(
+        [FromBody] ConfirmEmailCommand command,
+        ISender sender,
+        CancellationToken ct)
+    {
+        await sender.Send(command, ct);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> ResendConfirmation(
+        [FromBody] ResendEmailConfirmationCommand command,
         ISender sender,
         CancellationToken ct)
     {

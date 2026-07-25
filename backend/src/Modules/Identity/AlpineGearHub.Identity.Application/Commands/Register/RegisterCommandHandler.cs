@@ -11,7 +11,8 @@ namespace AlpineGearHub.Identity.Application.Commands.Register;
 public sealed class RegisterCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher<User> passwordHasher,
-    ITokenService tokenService)
+    ITokenService tokenService,
+    IEmailSender emailSender)
     : IRequestHandler<RegisterCommand, AuthResponse>
 {
     public async Task<AuthResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -29,7 +30,11 @@ public sealed class RegisterCommandHandler(
         var (rawRefresh, refreshHash, refreshExpiry) = tokenService.GenerateRefreshToken();
         user.AddRefreshToken(refreshHash, refreshExpiry);
 
+        var (rawConfirmation, confirmationHash, confirmationExpiry) = tokenService.GenerateEmailConfirmationToken();
+        user.AddEmailConfirmationToken(confirmationHash, confirmationExpiry);
+
         await userRepository.SaveChangesAsync(cancellationToken);
+        await emailSender.SendEmailConfirmationEmailAsync(user.Email, rawConfirmation, cancellationToken);
 
         return new AuthResponse(
             accessToken,

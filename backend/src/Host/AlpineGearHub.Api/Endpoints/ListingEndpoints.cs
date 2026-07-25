@@ -78,6 +78,7 @@ public static class ListingEndpoints
             return Results.NoContent();
         })
         .RequireAuthorization()
+        .RequireAuthorization("RequireConfirmedEmail")
         .WithSummary("Publish a Draft listing → Active");
 
         group.MapPost("/{id:guid}/status", async (

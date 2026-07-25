@@ -29,6 +29,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .HasMaxLength(32);
 
+        builder.Property(u => u.EmailConfirmed)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(u => u.CreatedAt)
             .IsRequired()
             .HasDefaultValueSql("now()");
@@ -47,6 +51,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Metadata.FindNavigation(nameof(User.PasswordResetTokens))!
+            .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(u => u.EmailConfirmationTokens)
+            .WithOne()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Metadata.FindNavigation(nameof(User.EmailConfirmationTokens))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
     }
 }

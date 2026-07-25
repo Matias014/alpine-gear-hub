@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Tests.Helpers;
 using AlpineGearHub.Identity.Application.Commands.Login;
+using AlpineGearHub.Identity.Application.Commands.Register;
 using AlpineGearHub.Identity.Application.DTOs;
 using AlpineGearHub.Listings.Application.Commands.ChangeListingStatus;
 using AlpineGearHub.Listings.Application.Commands.CreateListing;
@@ -286,5 +287,42 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
         var getListingResponse = await seller.GetAsync($"/api/listings/{listing.Id}");
         var fetchedListing = await getListingResponse.Content.ReadFromJsonAsync<ListingResponse>();
         fetchedListing!.Images.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateListing_ByUnconfirmedEmailUser_StillSucceeds()
+    {
+        // Creating a Draft (nobody else can see it yet) doesn't need a confirmed email - only
+        // publishing (making it public) does. TestFlows.RegisterAsync auto-confirms, so this test
+        // registers directly instead to get a genuinely unconfirmed account.
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Unconfirmed Seller", email, "Password1!"));
+        var auth = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        client.SetBearerToken(auth.AccessToken);
+        var categoryId = await TestFlows.GetAnyCategoryIdAsync(client);
+
+        var response = await client.PostAsync("/api/listings", new CreateListingCommand(
+            Guid.Empty, categoryId, "Draft Only", "desc", 50m, "EUR", GearCondition.Good, "Nowhere"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task Publish_ByUnconfirmedEmailUser_ReturnsForbidden()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Unconfirmed Publisher", email, "Password1!"));
+        var auth = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        client.SetBearerToken(auth.AccessToken);
+        var categoryId = await TestFlows.GetAnyCategoryIdAsync(client);
+        var createResponse = await client.PostAsync("/api/listings", new CreateListingCommand(
+            Guid.Empty, categoryId, "Blocked Publish", "desc", 50m, "EUR", GearCondition.Good, "Nowhere"));
+        var listing = (await createResponse.Content.ReadFromJsonAsync<ListingResponse>())!;
+
+        var response = await client.PostAsync($"/api/listings/{listing.Id}/publish");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

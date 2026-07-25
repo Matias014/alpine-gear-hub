@@ -5,10 +5,12 @@ using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Middleware;
 using AlpineGearHub.Chat.Infrastructure;
 using AlpineGearHub.Chat.Infrastructure.Hubs;
+using AlpineGearHub.Identity.Application.Interfaces;
 using AlpineGearHub.Identity.Domain.Entities;
 using AlpineGearHub.Identity.Domain.Enums;
 using AlpineGearHub.Identity.Infrastructure;
 using AlpineGearHub.Identity.Infrastructure.Data;
+using AlpineGearHub.Identity.Infrastructure.Services;
 using AlpineGearHub.Listings.Domain.Entities;
 using AlpineGearHub.Listings.Infrastructure;
 using AlpineGearHub.Listings.Infrastructure.Data;
@@ -123,6 +125,11 @@ builder.Services.AddAuthorization(options =>
         p.RequireRole(UserRole.Moderator.ToString(), UserRole.Admin.ToString()));
     options.AddPolicy("RequireAdmin", p =>
         p.RequireRole(UserRole.Admin.ToString()));
+    // The access token's email_verified claim is baked in at issuance (TokenService), so a user
+    // who confirms mid-session only picks this up once they refresh/re-login - acceptable given
+    // the 15-minute access token lifetime.
+    options.AddPolicy("RequireConfirmedEmail", p =>
+        p.RequireClaim(AuthClaimTypes.EmailVerified, "true"));
 });
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
@@ -149,7 +156,22 @@ builder.Services
 
 // ── Exception handling ────────────────────────────────────────────────────────
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
+    // A failed [Authorize] claim/role requirement (e.g. RequireConfirmedEmail) never throws - the
+    // JWT bearer handler just Forbid()s with an empty body, so GlobalExceptionHandler never sees
+    // it. UseStatusCodePages (below) is what actually turns that empty 403 into a ProblemDetails
+    // body; this only adds a clearer Detail for the specific "email not confirmed yet" case.
+    options.CustomizeProblemDetails = context =>
+    {
+        if (context.ProblemDetails.Status == StatusCodes.Status403Forbidden
+            && context.HttpContext.User.Identity?.IsAuthenticated == true
+            && context.HttpContext.User.FindFirst(AuthClaimTypes.EmailVerified)?.Value != "true")
+        {
+            context.ProblemDetails.Detail = "Please confirm your email address before doing this.";
+        }
+    };
+});
 
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
@@ -177,7 +199,7 @@ using (var scope = app.Services.CreateScope())
         var adminPassword = app.Configuration["Seed:AdminPassword"] ?? "Admin1234!";
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
         var passwordHash = hasher.HashPassword(null!, adminPassword);
-        var admin = User.Create(adminEmail, "System Admin", passwordHash, UserRole.Admin);
+        var admin = User.Create(adminEmail, "System Admin", passwordHash, UserRole.Admin, emailConfirmed: true);
         identityDb.Users.Add(admin);
         identityDb.SaveChanges();
     }
@@ -213,6 +235,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -243,6 +266,20 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 app.MapGroup("/api/auth")
    .WithTags("Auth")
    .MapAuthEndpoints();
+
+if (app.Environment.IsDevelopment())
+{
+    // Dev-only: no real email provider is wired up (LoggingEmailSender just logs the link), so
+    // this is how a human tester or scripts/seed-demo-listings.sh can grab the confirmation link
+    // without a real inbox. Never mapped outside Development - never touches the DB either, since
+    // the raw token is only ever stored hashed there.
+    app.MapGet("/api/auth/dev/last-confirmation-link", (string email) =>
+        LoggingEmailSender.GetLastConfirmationLink(email) is { } link
+            ? Results.Ok(new { link })
+            : Results.NotFound())
+       .WithTags("Auth")
+       .AllowAnonymous();
+}
 
 app.MapGroup("/api/categories")
    .WithTags("Categories")

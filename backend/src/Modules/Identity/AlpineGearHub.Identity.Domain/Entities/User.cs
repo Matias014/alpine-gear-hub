@@ -7,15 +7,18 @@ public class User : AggregateRoot
 {
     private readonly List<RefreshToken> _refreshTokens = [];
     private readonly List<PasswordResetToken> _passwordResetTokens = [];
+    private readonly List<EmailConfirmationToken> _emailConfirmationTokens = [];
 
     public string Email { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
     public string FullName { get; private set; } = string.Empty;
     public UserRole Role { get; private set; }
+    public bool EmailConfirmed { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     public IReadOnlyList<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
     public IReadOnlyList<PasswordResetToken> PasswordResetTokens => _passwordResetTokens.AsReadOnly();
+    public IReadOnlyList<EmailConfirmationToken> EmailConfirmationTokens => _emailConfirmationTokens.AsReadOnly();
 
     private User() { }
 
@@ -23,7 +26,8 @@ public class User : AggregateRoot
         string email,
         string fullName,
         string passwordHash,
-        UserRole role = UserRole.Member)
+        UserRole role = UserRole.Member,
+        bool emailConfirmed = false)
     {
         return new User
         {
@@ -32,6 +36,7 @@ public class User : AggregateRoot
             FullName = fullName.Trim(),
             PasswordHash = passwordHash,
             Role = role,
+            EmailConfirmed = emailConfirmed,
             CreatedAt = DateTime.UtcNow,
         };
     }
@@ -71,4 +76,21 @@ public class User : AggregateRoot
         _passwordResetTokens.FirstOrDefault(t => t.TokenHash == tokenHash && t.IsActive);
 
     public void SetPassword(string newPasswordHash) => PasswordHash = newPasswordHash;
+
+    public EmailConfirmationToken AddEmailConfirmationToken(string tokenHash, DateTime expiresAt)
+    {
+        // Same story as password reset tokens - a new confirmation link should supersede any
+        // still-outstanding one.
+        foreach (var existing in _emailConfirmationTokens.Where(t => t.IsActive))
+            existing.MarkUsed();
+
+        var token = EmailConfirmationToken.Create(Id, tokenHash, expiresAt);
+        _emailConfirmationTokens.Add(token);
+        return token;
+    }
+
+    public EmailConfirmationToken? FindActiveEmailConfirmationToken(string tokenHash) =>
+        _emailConfirmationTokens.FirstOrDefault(t => t.TokenHash == tokenHash && t.IsActive);
+
+    public void ConfirmEmail() => EmailConfirmed = true;
 }

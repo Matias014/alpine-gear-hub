@@ -1,9 +1,13 @@
 using System.Net.Http.Json;
+using AlpineGearHub.Identity.Application.Commands.ConfirmEmail;
+using AlpineGearHub.Identity.Application.Commands.RefreshToken;
 using AlpineGearHub.Identity.Application.Commands.Register;
 using AlpineGearHub.Identity.Application.DTOs;
+using AlpineGearHub.Identity.Application.Interfaces;
 using AlpineGearHub.Listings.Application.Commands.CreateListing;
 using AlpineGearHub.Listings.Application.DTOs;
 using AlpineGearHub.Listings.Domain.Enums;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AlpineGearHub.Api.Tests.Helpers;
 
@@ -21,6 +25,18 @@ public static class TestFlows
         response.EnsureSuccessStatusCode();
 
         var auth = (await response.Content.ReadFromJsonAsync<AuthResponse>())!;
+
+        // Registered accounts start email-unconfirmed, which now blocks publishing listings and
+        // messaging (see the "RequireConfirmedEmail" policy) - most tests just want a fully-usable
+        // account, so confirm it here instead of repeating this in every test. The token Register
+        // just returned still carries email_verified=false baked in, so refresh for a fresh one.
+        var emailSender = (CapturingEmailSender)factory.Services.GetRequiredService<IEmailSender>();
+        var confirmationToken = emailSender.GetLastConfirmationToken(email);
+        await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(confirmationToken));
+
+        var refreshResponse = await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand(auth.RefreshToken));
+        auth = (await refreshResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+
         client.SetBearerToken(auth.AccessToken);
 
         return client;
