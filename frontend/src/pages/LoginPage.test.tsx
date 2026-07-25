@@ -59,4 +59,15 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('Invalid credentials')).toBeInTheDocument()
   })
+
+  it('links to the forgot-password page', () => {
+    vi.mocked(useAuth).mockReturnValue({ login: vi.fn() } as unknown as ReturnType<typeof useAuth>)
+
+    renderAt(['/login'])
+
+    expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute(
+      'href',
+      '/forgot-password',
+    )
+  })
 })

@@ -54,6 +54,12 @@ export default function LoginPage() {
           />
         </FormField>
 
+        <p className="text-right text-sm">
+          <Link to="/forgot-password" className="font-medium text-emerald-700 hover:underline">
+            Forgot password?
+          </Link>
+        </p>
+
         {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 
         <button type="submit" disabled={isSubmitting} className={`w-full ${buttonPrimary}`}>
