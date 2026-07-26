@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Tests.Helpers;
 using AlpineGearHub.Identity.Application.Commands.Login;
-using AlpineGearHub.Identity.Application.DTOs;
 using AlpineGearHub.Listings.Application.Commands.ChangeListingStatus;
 using AlpineGearHub.Listings.Application.DTOs;
 using AlpineGearHub.Moderation.Application.Commands.ReviewReport;
@@ -20,7 +19,7 @@ public sealed class ModerationTests(AlpineGearHubApiFactory factory)
     {
         var admin = new ApiClient(factory.CreateClient());
         var loginResponse = await admin.PostAsync("/api/auth/login", new LoginCommand("admin@alpinegearhub.local", "Admin1234!"));
-        var auth = (await loginResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = (await loginResponse.Content.ReadFromJsonAsync<ClientAuthResponse>())!;
         admin.SetBearerToken(auth.AccessToken);
         return admin;
     }

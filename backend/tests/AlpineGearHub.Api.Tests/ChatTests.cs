@@ -4,7 +4,6 @@ using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Tests.Helpers;
 using AlpineGearHub.Chat.Application.DTOs;
 using AlpineGearHub.Identity.Application.Commands.Register;
-using AlpineGearHub.Identity.Application.DTOs;
 using FluentAssertions;
 
 namespace AlpineGearHub.Api.Tests;
@@ -119,7 +118,7 @@ public sealed class ChatTests(AlpineGearHubApiFactory factory)
         var buyer = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
         var registerResponse = await buyer.PostAsync("/api/auth/register", new RegisterCommand("Unconfirmed Buyer", email, "Password1!"));
-        var auth = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = (await registerResponse.Content.ReadFromJsonAsync<ClientAuthResponse>())!;
         buyer.SetBearerToken(auth.AccessToken);
 
         var response = await buyer.PostAsync("/api/chat/conversations", new StartConversationRequest(listing.Id));

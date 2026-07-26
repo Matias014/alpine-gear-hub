@@ -1,8 +1,7 @@
 using System.Net.Http.Json;
+using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Identity.Application.Commands.ConfirmEmail;
-using AlpineGearHub.Identity.Application.Commands.RefreshToken;
 using AlpineGearHub.Identity.Application.Commands.Register;
-using AlpineGearHub.Identity.Application.DTOs;
 using AlpineGearHub.Identity.Application.Interfaces;
 using AlpineGearHub.Listings.Application.Commands.CreateListing;
 using AlpineGearHub.Listings.Application.DTOs;
@@ -24,18 +23,17 @@ public static class TestFlows
         var response = await client.PostAsync("/api/auth/register", new RegisterCommand(fullName, email, "Password1!"));
         response.EnsureSuccessStatusCode();
 
-        var auth = (await response.Content.ReadFromJsonAsync<AuthResponse>())!;
-
         // Registered accounts start email-unconfirmed, which now blocks publishing listings and
         // messaging (see the "RequireConfirmedEmail" policy) - most tests just want a fully-usable
         // account, so confirm it here instead of repeating this in every test. The token Register
-        // just returned still carries email_verified=false baked in, so refresh for a fresh one.
+        // just returned still carries email_verified=false baked in, so refresh for a fresh one -
+        // the refresh cookie Register just set is already in this client's cookie jar.
         var emailSender = (CapturingEmailSender)factory.Services.GetRequiredService<IEmailSender>();
         var confirmationToken = emailSender.GetLastConfirmationToken(email);
         await client.PostAsync("/api/auth/confirm-email", new ConfirmEmailCommand(confirmationToken));
 
-        var refreshResponse = await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand(auth.RefreshToken));
-        auth = (await refreshResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var refreshResponse = await client.PostAsync("/api/auth/refresh");
+        var auth = (await refreshResponse.Content.ReadFromJsonAsync<ClientAuthResponse>())!;
 
         client.SetBearerToken(auth.AccessToken);
 

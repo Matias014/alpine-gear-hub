@@ -4,7 +4,6 @@ using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Tests.Helpers;
 using AlpineGearHub.Identity.Application.Commands.Login;
 using AlpineGearHub.Identity.Application.Commands.Register;
-using AlpineGearHub.Identity.Application.DTOs;
 using AlpineGearHub.Listings.Application.Commands.ChangeListingStatus;
 using AlpineGearHub.Listings.Application.Commands.CreateListing;
 using AlpineGearHub.Listings.Application.Commands.UpdateListing;
@@ -153,7 +152,7 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
         var admin = new ApiClient(factory.CreateClient());
         var loginResponse = await admin.PostAsync("/api/auth/login",
             new LoginCommand("admin@alpinegearhub.local", "Admin1234!"));
-        var auth = (await loginResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = (await loginResponse.Content.ReadFromJsonAsync<ClientAuthResponse>())!;
         admin.SetBearerToken(auth.AccessToken);
 
         var response = await admin.PostAsync($"/api/listings/{listing.Id}/status",
@@ -298,7 +297,7 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
         var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Unconfirmed Seller", email, "Password1!"));
-        var auth = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = (await registerResponse.Content.ReadFromJsonAsync<ClientAuthResponse>())!;
         client.SetBearerToken(auth.AccessToken);
         var categoryId = await TestFlows.GetAnyCategoryIdAsync(client);
 
@@ -314,7 +313,7 @@ public sealed class ListingsTests(AlpineGearHubApiFactory factory)
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
         var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Unconfirmed Publisher", email, "Password1!"));
-        var auth = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = (await registerResponse.Content.ReadFromJsonAsync<ClientAuthResponse>())!;
         client.SetBearerToken(auth.AccessToken);
         var categoryId = await TestFlows.GetAnyCategoryIdAsync(client);
         var createResponse = await client.PostAsync("/api/listings", new CreateListingCommand(

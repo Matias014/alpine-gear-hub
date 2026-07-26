@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using AlpineGearHub.Api.Endpoints;
 using AlpineGearHub.Api.Tests.Helpers;
 using AlpineGearHub.Identity.Application.Commands.ConfirmEmail;
 using AlpineGearHub.Identity.Application.Commands.ConfirmPasswordReset;
 using AlpineGearHub.Identity.Application.Commands.Login;
-using AlpineGearHub.Identity.Application.Commands.RefreshToken;
 using AlpineGearHub.Identity.Application.Commands.Register;
 using AlpineGearHub.Identity.Application.Commands.RequestPasswordReset;
 using AlpineGearHub.Identity.Application.Commands.ResendEmailConfirmation;
@@ -19,7 +19,7 @@ namespace AlpineGearHub.Api.Tests;
 public sealed class IdentityTests(AlpineGearHubApiFactory factory)
 {
     [Fact]
-    public async Task Register_ReturnsCreatedWithTokens()
+    public async Task Register_ReturnsCreatedWithAnAccessTokenAndSetsARefreshCookie()
     {
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
@@ -27,10 +27,13 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
         var response = await client.PostAsync("/api/auth/register", new RegisterCommand("New User", email, "Password1!"));
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        var auth = await response.Content.ReadFromJsonAsync<ClientAuthResponse>();
         auth!.AccessToken.Should().NotBeNullOrWhiteSpace();
         auth.Email.Should().Be(email);
         auth.Role.Should().Be("Member");
+        // The refresh token itself must never appear in the body - only as the httpOnly cookie.
+        (await response.Content.ReadAsStringAsync()).Should().NotContain("refreshToken");
+        ApiClient.GetCookieValue(response, "refreshToken").Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -57,7 +60,7 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
     }
 
     [Fact]
-    public async Task Login_WithCorrectCredentials_ReturnsTokens()
+    public async Task Login_WithCorrectCredentials_ReturnsAnAccessTokenAndSetsARefreshCookie()
     {
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
@@ -66,8 +69,9 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
         var response = await client.PostAsync("/api/auth/login", new LoginCommand(email, "Password1!"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        var auth = await response.Content.ReadFromJsonAsync<ClientAuthResponse>();
         auth!.Email.Should().Be(email);
+        ApiClient.GetCookieValue(response, "refreshToken").Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -94,41 +98,56 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
     }
 
     [Fact]
-    public async Task Refresh_WithValidToken_ReturnsNewTokenPair()
+    public async Task Refresh_WithValidCookie_ReturnsNewTokenPairAndRotatesTheCookie()
     {
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
         var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Refresh User", email, "Password1!"));
-        var original = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var originalCookie = ApiClient.GetCookieValue(registerResponse, "refreshToken");
 
-        var response = await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand(original.RefreshToken));
+        // No body needed - the client's cookie jar already carries the one Register just set.
+        var response = await client.PostAsync("/api/auth/refresh");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var refreshed = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        refreshed!.RefreshToken.Should().NotBe(original.RefreshToken);
+        (await response.Content.ReadAsStringAsync()).Should().NotContain("refreshToken");
+        ApiClient.GetCookieValue(response, "refreshToken").Should().NotBe(originalCookie);
     }
 
     [Fact]
-    public async Task Refresh_ReusingRotatedToken_ReturnsUnauthorized()
+    public async Task Refresh_ReusingARotatedCookie_ReturnsUnauthorized()
     {
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
         var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Rotate User", email, "Password1!"));
-        var original = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var originalCookie = ApiClient.GetCookieValue(registerResponse, "refreshToken")!;
 
-        // Refreshing once rotates and revokes the original token, so reusing it should now fail.
-        await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand(original.RefreshToken));
-        var response = await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand(original.RefreshToken));
+        // Refreshing once rotates (and revokes) the original token via the client's own jar.
+        await client.PostAsync("/api/auth/refresh");
+
+        // Replay the now-superseded cookie explicitly, via a fresh client with an empty jar (so it
+        // doesn't also send whatever the first client's jar rotated to), to prove it's rejected.
+        var staleClient = new ApiClient(factory.CreateClient());
+        var response = await staleClient.PostWithCookieAsync("/api/auth/refresh", "refreshToken", originalCookie);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task Refresh_WithGarbageToken_ReturnsUnauthorized()
+    public async Task Refresh_WithGarbageCookie_ReturnsUnauthorized()
     {
         var client = new ApiClient(factory.CreateClient());
 
-        var response = await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand("not-a-real-token"));
+        var response = await client.PostWithCookieAsync("/api/auth/refresh", "refreshToken", "not-a-real-token");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Refresh_WithNoCookieAtAll_ReturnsUnauthorized()
+    {
+        var client = new ApiClient(factory.CreateClient());
+
+        var response = await client.PostAsync("/api/auth/refresh");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -202,14 +221,15 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
     {
         var client = new ApiClient(factory.CreateClient());
         var email = $"{Guid.NewGuid():N}@test.local";
-        var registerResponse = await client.PostAsync("/api/auth/register", new RegisterCommand("Revoke Sessions User", email, "Password1!"));
-        var original = (await registerResponse.Content.ReadFromJsonAsync<AuthResponse>())!;
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Revoke Sessions User", email, "Password1!"));
 
         await client.PostAsync("/api/auth/forgot-password", new RequestPasswordResetCommand(email));
         var token = GetLastPasswordResetToken(email);
         await client.PostAsync("/api/auth/reset-password", new ConfirmPasswordResetCommand(token, "NewPassword2@"));
 
-        var refreshResponse = await client.PostAsync("/api/auth/refresh", new RefreshTokenCommand(original.RefreshToken));
+        // Reset doesn't touch the cookie, so the client's jar still carries the pre-reset one -
+        // which should now be revoked.
+        var refreshResponse = await client.PostAsync("/api/auth/refresh");
 
         refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -383,5 +403,32 @@ public sealed class IdentityTests(AlpineGearHubApiFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         // No new email captured - still the one from registration.
         GetLastEmailConfirmationToken(email).Should().Be(token);
+    }
+
+    [Fact]
+    public async Task Logout_RevokesTheRefreshCookie()
+    {
+        var client = new ApiClient(factory.CreateClient());
+        var email = $"{Guid.NewGuid():N}@test.local";
+        await client.PostAsync("/api/auth/register", new RegisterCommand("Logout User", email, "Password1!"));
+
+        var logoutResponse = await client.PostAsync("/api/auth/logout");
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // The client's jar still holds the (now-revoked) pre-logout cookie value.
+        var refreshResponse = await client.PostAsync("/api/auth/refresh");
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Logout_WithNoCookie_StillReturnsNoContent()
+    {
+        // Logging out with nothing to revoke isn't an error - there's no sensitive "you weren't
+        // logged in" fact to protect, and the client just wants its (already-absent) session gone.
+        var client = new ApiClient(factory.CreateClient());
+
+        var response = await client.PostAsync("/api/auth/logout");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 }
