@@ -9,15 +9,16 @@ const AUTH_PATHS_WITHOUT_RETRY = ['/auth/login', '/auth/register', '/auth/refres
 let refreshPromise: Promise<string | null> | null = null
 
 async function refreshAccessToken(): Promise<string | null> {
-  const stored = tokenStorage.get()
-  if (!stored) return null
+  // Nothing stored means we were never logged in this session - don't bother asking the server,
+  // even though it'd just 401 anyway (the refresh token itself lives in an httpOnly cookie now,
+  // invisible here - see AuthEndpoints.SetRefreshTokenCookie on the backend).
+  if (!tokenStorage.get()) return null
 
   refreshPromise ??= (async () => {
     try {
       const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: stored.refreshToken }),
+        credentials: 'include',
       })
       if (!res.ok) throw new Error('refresh failed')
 
@@ -41,6 +42,7 @@ async function send<T>(path: string, init: RequestInit, isRetry = false): Promis
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,

@@ -1,9 +1,10 @@
 export type UserRole = 'Member' | 'Moderator' | 'Admin'
 
+// No refreshToken field - it now travels only as an httpOnly cookie the backend sets on
+// register/login/refresh (see lib/api.ts), never in a body a script could read.
 export interface AuthResponse {
   accessToken: string
   accessTokenExpiresAt: string
-  refreshToken: string
   fullName: string
   email: string
   role: UserRole

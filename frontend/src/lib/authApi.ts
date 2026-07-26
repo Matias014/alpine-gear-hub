@@ -19,4 +19,6 @@ export const authApi = {
   confirmEmail: (data: ConfirmEmailRequest) => api.post<void>('/auth/confirm-email', data),
   resendEmailConfirmation: (data: ResendEmailConfirmationRequest) =>
     api.post<void>('/auth/resend-confirmation', data),
+  // No body - the refresh cookie the backend set on login/register is what gets revoked.
+  logout: () => api.post<void>('/auth/logout'),
 }

@@ -5,7 +5,6 @@ import type { AuthResponse } from '../types/auth'
 const sampleAuth: AuthResponse = {
   accessToken: 'access-token',
   accessTokenExpiresAt: '2026-01-01T00:00:00Z',
-  refreshToken: 'refresh-token',
   fullName: 'Jane Climber',
   email: 'jane@example.com',
   role: 'Member',

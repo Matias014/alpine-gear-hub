@@ -55,6 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    // Fire-and-forget: the refresh cookie is httpOnly, so this is the only way to revoke it and
+    // clear it server-side, but there's nothing worth blocking the UI on here - local state clears
+    // either way, and the request completes in the background regardless of navigation.
+    authApi.logout().catch(() => {})
     tokenStorage.clear()
     setUser(null)
   }

@@ -15,7 +15,6 @@ function fakeResponse(status: number, body: unknown) {
 const storedAuth: AuthResponse = {
   accessToken: 'old-token',
   accessTokenExpiresAt: '2026-01-01T00:00:00Z',
-  refreshToken: 'refresh-token',
   fullName: 'Jane Climber',
   email: 'jane@example.com',
   role: 'Member',
@@ -96,7 +95,7 @@ describe('silent token refresh on 401', () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       const authHeader = (init?.headers as Record<string, string> | undefined)?.Authorization
       if (url === '/api/auth/refresh') {
-        return fakeResponse(200, { ...storedAuth, accessToken: 'new-token', refreshToken: 'new-refresh' })
+        return fakeResponse(200, { ...storedAuth, accessToken: 'new-token' })
       }
       if (authHeader === 'Bearer new-token') return fakeResponse(200, { items: [] })
       return fakeResponse(401, { title: 'Unauthorized' })
@@ -116,7 +115,7 @@ describe('silent token refresh on 401', () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       const authHeader = (init?.headers as Record<string, string> | undefined)?.Authorization
       if (url === '/api/auth/refresh') {
-        return fakeResponse(200, { ...storedAuth, accessToken: 'new-token', refreshToken: 'new-refresh' })
+        return fakeResponse(200, { ...storedAuth, accessToken: 'new-token' })
       }
       if (authHeader === 'Bearer new-token') return fakeResponse(200, { ok: true })
       return fakeResponse(401, { title: 'Unauthorized' })

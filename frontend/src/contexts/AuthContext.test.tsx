@@ -7,7 +7,7 @@ import { tokenStorage } from '../lib/tokenStorage'
 import type { AuthResponse } from '../types/auth'
 
 vi.mock('../lib/authApi', () => ({
-  authApi: { login: vi.fn(), register: vi.fn() },
+  authApi: { login: vi.fn(), register: vi.fn(), logout: vi.fn().mockResolvedValue(undefined) },
 }))
 
 function makeToken(sub: string): string {
@@ -20,7 +20,6 @@ function makeAuthResponse(overrides: Partial<AuthResponse> = {}): AuthResponse {
   return {
     accessToken: makeToken('user-1'),
     accessTokenExpiresAt: '2026-01-01T00:00:00Z',
-    refreshToken: 'refresh-token',
     fullName: 'Jane Climber',
     email: 'jane@example.com',
     role: 'Member',
@@ -123,6 +122,9 @@ describe('AuthProvider', () => {
 
     await waitFor(() => expect(screen.getByText('authenticated: false')).toBeInTheDocument())
     expect(tokenStorage.get()).toBeNull()
+    // Revokes the httpOnly refresh cookie server-side too - clearing local storage alone
+    // wouldn't touch it, since JS can't read or delete an httpOnly cookie itself.
+    expect(authApi.logout).toHaveBeenCalledOnce()
   })
 })
 
